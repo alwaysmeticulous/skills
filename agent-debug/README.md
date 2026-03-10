@@ -13,4 +13,5 @@ These skills are automatically placed in `.claude/skills/` in every workspace th
 | [`debugging-diffs`](debugging-diffs/SKILL.md) | Investigate unexpected screenshot diffs between head and base replays |
 | [`debugging-flakes`](debugging-flakes/SKILL.md) | Investigate flaky or non-deterministic replay behavior |
 | [`debugging-network`](debugging-network/SKILL.md) | Investigate network-related replay failures and divergences |
+| [`debugging-timelines`](debugging-timelines/SKILL.md) | Investigate timeline divergence between head and base replays |
 | [`pr-analysis`](pr-analysis/SKILL.md) | Analyze PR source changes and correlate with screenshot diffs |
