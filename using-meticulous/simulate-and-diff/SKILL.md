@@ -1,6 +1,6 @@
 ---
 name: meticulous-simulate-and-diff
-description: Run a Meticulous session simulation against a live URL and, if a base replay ID is provided, analyze any visual differences found — including pixel diffs and HTML diffs. Use when you need to check whether a code change has introduced visual regressions for a specific session.
+description: Run a Meticulous session simulation against a live URL and, if a base replay ID is provided, analyze any visual differences found — including pixel diffs and HTML diffs. Use when checking whether a code change has introduced visual regressions for a specific session.
 ---
 
 # Simulate a session and analyze diffs
@@ -80,23 +80,13 @@ Each screenshot has a corresponding metadata file containing a full HTML snapsho
 
 The base metadata is permanently cached when the simulation downloads the base replay, so no additional download is needed.
 
-Read both `.metadata.json` files. The relevant field is `before.dom` — a full HTML string of the page state before the screenshot was taken.
+Read both `.metadata.json` files. The relevant fields are:
+- `before.dom` — full HTML of the page at screenshot time; diff these two strings to understand what changed
+- `before.routeData.url` — which page/route the screenshot was taken on
 
-Diff the two `before.dom` strings to understand what changed in the DOM. Focus on:
-- Tags that were added or removed
-- Attribute changes (especially `class`, `aria-*`, `data-*`, `style`)
-- Text content changes
+When diffing the HTML, focus on tag additions/removals, `class` attribute changes, and text content changes.
 
-The `before.dom` also includes `before.routeData.url` which tells you which page/route this screenshot was taken on.
-
-### Quick summary already computed
-
-The simulation also computes a compact summary of the HTML change during diffing:
-
-- `changedSectionsClassNames` — the CSS class names present in the DOM regions that changed (e.g. `["btn", "btn-primary", "text-red-500"]`). These are stored in the diff result JSON files under `<replayDir>/`.
-- `mismatchFraction` — what proportion of pixels changed (visible in stdout per-screenshot lines)
-
-If `changedSectionsClassNames` is empty but there is a pixel diff, this usually means the change is purely visual (e.g. a color or size change on an element with no class name) rather than a structural DOM change.
+The per-screenshot stdout lines also report `mismatchFraction` (proportion of pixels that changed). If there is a pixel diff but the `before.dom` strings are identical, the change is purely visual (e.g. a color shift) rather than structural.
 
 ## Step 5 — Summarize the findings
 
@@ -114,7 +104,5 @@ The comparison URL logged to stdout is always worth surfacing, as it lets a huma
 
 ## Notes
 
-- All files under `~/.meticulous/replays/<replayDir>/` persist after the run and can be freely re-read.
-- The base replay screenshots and metadata are cached at `~/.meticulous/replays/<baseReplayId>/` and will not be re-downloaded on subsequent runs with the same base.
-- The pixel diff images at `<replayDir>/diffs/<baseReplayId>/` can be opened directly and are useful for visually inspecting what changed.
-- If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared manually by running again with `--baseReplayId` set to the new replay's ID from the first run.
+- The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
+- If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
