@@ -42,6 +42,13 @@ These skills are automatically placed in `.claude/skills/` inside every workspac
 
 Copy the relevant `SKILL.md` into your project's `.claude/skills/<name>/SKILL.md` (or the equivalent path for your agent).
 
+## Skill Categories
+
+| Directory | Purpose |
+|-----------|---------|
+| `meticulous-cli/` | Reference documentation for each CLI command and its options |
+| `using-meticulous/` | Higher-level workflow skills for common agent tasks |
+
 ## Contributing
 
 To add or improve a skill:
