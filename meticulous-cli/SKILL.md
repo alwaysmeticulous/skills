@@ -20,19 +20,17 @@ The CLI can also be invoked as `meticulous` if installed globally or available o
 | Command | Purpose |
 |---------|---------|
 | `auth` | Authenticate with Meticulous (whoami, logout) |
-| `ci` | CI/CD workflows — run tests locally or in cloud, upload assets/containers, tunnel |
+| `debug` | Set up AI-ready debug workspaces for investigating diffs, replays, and test runs |
 | `download` | Download sessions, replays, and test runs locally |
 | `project` | Inspect the project linked to an API token |
-| `record` | Open a browser and record a session |
 | `simulate` / `replay` | Replay a recorded session against a URL |
 | `schema` | Output the CLI command schema as JSON (for agent/programmatic use) |
 
 See the skill for each group for full option details:
 - [auth/SKILL.md](auth/SKILL.md)
-- [ci/SKILL.md](ci/SKILL.md)
+- [debug/SKILL.md](debug/SKILL.md)
 - [download/SKILL.md](download/SKILL.md)
 - [project/SKILL.md](project/SKILL.md)
-- [record/SKILL.md](record/SKILL.md)
 - [simulate/SKILL.md](simulate/SKILL.md)
 - [schema/SKILL.md](schema/SKILL.md)
 
@@ -59,7 +57,4 @@ meticulous schema
 
 # Run a single replay locally
 meticulous simulate --sessionId=<id> --appUrl=http://localhost:3000
-
-# Run all tests in the cloud
-meticulous ci run-with-tunnel --apiToken=$TOKEN --appUrl=http://localhost:3000
 ```
