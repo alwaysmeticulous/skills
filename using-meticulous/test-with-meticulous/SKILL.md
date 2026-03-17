@@ -34,8 +34,6 @@ The command will finish with status `Failure` if visual differences have been de
 npx @alwaysmeticulous/cli agent test-run-diffs --testRunId <testRunId>
 ```
 
-Optional: pass `--all` to include all screenshots (matches, flakes, etc.), not just differences.
-
 **Output format:** TSV on stdout, metadata on stderr.
 
 stdout columns:
@@ -50,14 +48,14 @@ Example output:
 CqctwLpPC7	after-event-0	1	5	diff	0.00234	1;3
 RRMGQft7PD	after-event-174	3	8	diff	0.01050	1;2
 CLkCJ8WLrJ	after-event-8	2	4	diff	0.00100	none
-Ct8HwmJNzM	end-state	5	5	flake	0.00010
+Ct8HwmJNzM	end-state	5	5	flake	0.00010	n/a
 ```
 
 Each row represents a screenshot where a visual pixel difference was detected between the base (before) and head (after) replay. Rows with `outcome=diff` are confirmed visual differences; other outcomes (`flake`, `error`, `warning`, `missing-base`, `missing-head`) are informational.
 
 - `outcome`: `diff` (visual pixel difference), `flake`, `error`, `warning`, `missing-base`, `missing-head`
 - `mismatch` (0-1, 5 decimal places) is the pixel mismatch fraction
-- `domDiffIds` is a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. The special value `none` means no DOM diff was detected -- the visual difference is purely pixel-level (e.g. anti-aliasing, rendering differences), so you must inspect the screenshot images (Step 4) to understand the change.
+- `domDiffIds` is a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. Special values: `none` means no DOM changes were found (either computed successfully with no differences, or a matching screenshot where no diff is expected) -- the visual difference is purely pixel-level (e.g. anti-aliasing, rendering differences), so you must inspect the screenshot images (Step 4) to understand the change. `n/a` means the DOM diff is not applicable or could not be computed (e.g. missing base or head screenshot, error/warning outcomes, or the metadata was unavailable).
 
 stderr shows: total counts, unique diff counts, and timing breakdown. Proceed to Step 3 for rows with `outcome=diff`.
 
@@ -76,6 +74,8 @@ To view all diffs for a screenshot (omit `--index`):
 ```
 npx @alwaysmeticulous/cli agent dom-diff --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
+
+Optional: pass `--context <N|full>` to control how many context lines surround each hunk (default 3). Use `--context 0` for no context, or `--context full` for a single unified diff with full file context (requires `--index` to be omitted).
 
 **Output format:** Unified diff (`+`/`-` format) with leading indentation stripped.
 
