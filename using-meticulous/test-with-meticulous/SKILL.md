@@ -1,6 +1,6 @@
 ---
 name: test-with-meticulous
-description: Test and debug frontend changes using Meticulous. All frontend changes should be checked this way.
+description: Run after implementing any frontend change to verify its visual impact. Triggers a Meticulous test run, then inspects screenshot diffs to classify each visual change as intended or unintended. Use this before marking a frontend task as complete.
 user_invocable: true
 ---
 
@@ -66,25 +66,29 @@ stderr shows: total counts, unique diff counts, and timing breakdown. Proceed to
 
 Use `domDiffIds` to identify which subset of diffs to inspect. Screenshots sharing the same ID contain the same structural DOM change — pick one representative per unique ID for efficient coverage.
 
-### Step 2b -- Get screenshot image URLs
+### Step 2b -- Get screenshot images
 
 For each representative screenshot:
 
 ```
-npx @alwaysmeticulous/cli agent image-urls --replayDiffId <replayDiffId> --screenshotName <screenshotName>
+npx @alwaysmeticulous/cli agent image-files --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
+
+This downloads the screenshot images to a local tmp directory and prints the local file paths.
 
 **Output format:**
 
 ```
 outcome: <outcome>
-screenshot: <url>          # present for missing-base/missing-head
-before: <url>              # present for diff/no-diff
-after: <url>
-diffImage: <url>
+screenshot: <path>          # present for missing-base/missing-head
+before: <path>              # present for diff/no-diff
+after: <path>
+diffImage: <path>
 ```
 
-Open the `before`, `after`, and `diffImage` URLs to visually inspect the change. The `diffImage` is usually the most informative — it highlights exactly which pixels changed. Always inspect the images to understand the actual visual impact of a change, even when the DOM diff is clear.
+Open the `before`, `after`, and `diffImage` files to visually inspect the change. The `diffImage` is usually the most informative — it highlights exactly which pixels changed. Always inspect the images to understand the actual visual impact of a change, even when the DOM diff is clear.
+
+Alternative: use `image-urls` instead of `image-files` to get URLs to the images rather than downloading them locally.
 
 ### Step 2c -- Inspect the DOM diff (for structural detail)
 
@@ -132,24 +136,24 @@ Look for anomalies such as failed network requests, unexpected redirects, or tim
 
 ### Decision guide
 
-For each representative screenshot, classify the visual change as **expected** or **unexpected** based on the diff image and DOM diff:
+For each representative screenshot, classify the visual change as **intended** or **unintended** based on the diff image and DOM diff:
 
-- **Expected**: The visual change directly corresponds to a code change you made. Confirm and move on.
-- **Unexpected**: The change is not explained by your code changes. Flag it and investigate further.
+- **Intended**: The visual change is a desired outcome of the task you're working on. Confirm and move on.
+- **Unintended**: The change was not a goal of the task. This includes both changes that are clearly unrelated to your code, and — often more importantly — side effects of your code changes that weren't meant to happen. A change being _explainable_ by your code does not make it _intended_; if the task didn't call for that visual change, it's unintended.
 
-For unexpected diffs:
+For unintended changes:
 
-1. Use the timeline (Step 2d) to check for failed network requests, redirects, or other anomalies that could explain the diff.
-2. If you can confidently explain the cause (e.g. a flaky timestamp, a non-deterministic element), note the explanation.
-3. If the diff looks like a bug you introduced, attempt to fix it, then re-run the test.
+1. If the change is a side effect of your code, attempt to fix it so the code achieves the intended result without the unwanted visual change, then re-run the test.
+2. Use the timeline (Step 2d) to check for failed network requests, redirects, or other anomalies that could explain diffs unrelated to your code.
+3. If you can confidently explain the cause (e.g. a flaky timestamp, a non-deterministic element), note the explanation.
 4. If you cannot explain or fix it, flag it to the user.
 
 ### Final report
 
 After investigating all diffs and attempting fixes for any fixable issues, produce a summary that covers **all significant visual changes**. The number of explanation points should be at least as many as the number of unique domDiffIds you inspected — each visual change deserves its own explanation.
 
-1. **Expected changes**: For each distinct visual change confirmed as intentional, describe what changed visually (based on the diff image) and why it's expected.
-2. **Unexpected changes** (if any): For each, include:
+1. **Intended changes**: For each distinct visual change that is a desired outcome of the task, describe what changed visually (based on the diff image) and why it's intended.
+2. **Unintended changes** (if any): For each, include:
    - A representative `replayDiffId` / `screenshotName`
    - What the visual change looks like (e.g. "new badge element added", "layout shift in header")
-   - Your best assessment of the cause, if known (e.g. "likely caused by failed API request", "no explanation found")
+   - Whether it's a side effect of your code or unrelated, and your best assessment of the cause
