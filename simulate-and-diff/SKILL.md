@@ -33,8 +33,6 @@ meticulous simulate \
   --headless
 ```
 
-If you don't have a base replay to compare against, omit `--baseReplayId`. Screenshots will still be stored locally.
-
 Capture the full stdout. Key things to look for:
 
 ```
@@ -50,6 +48,21 @@ View comparison with base: https://app.meticulous.ai/projects/<org>/<project>/si
 ```
 
 **If there are no `FAIL!` lines:** the session is visually identical to the base — stop here and report no regressions.
+
+Proceed to Steps 2–5 to locate and analyse any diffs.
+
+### Without a base replay (quick-check mode)
+
+If no `baseReplayId` is available, omit it. Screenshots are still stored locally for direct visual inspection:
+
+```bash
+meticulous simulate \
+  --sessionId=<sessionId> \
+  --appUrl=<url> \
+  --headless
+```
+
+Then locate the replay directory (Step 2) and open the screenshots in `<replayDir>/screenshots/` to verify the UI looks correct. There are no diff images in this mode — inspection is purely visual. Steps 3–5 do not apply.
 
 ## Step 2 — Extract the head replay ID and locate the replay directory
 
