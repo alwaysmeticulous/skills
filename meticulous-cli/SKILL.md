@@ -22,6 +22,7 @@ The CLI can also be invoked as `meticulous` if installed globally or available o
 | `auth` | Authenticate with Meticulous (whoami, logout) |
 | `debug` | Set up AI-ready debug workspaces for investigating diffs, replays, and test runs |
 | `download` | Download sessions, replays, and test runs locally |
+| `local` | Find sessions relevant to the current branch's code changes |
 | `project` | Inspect the project linked to an API token |
 | `simulate` / `replay` | Replay a recorded session against a URL |
 | `schema` | Output the CLI command schema as JSON (for agent/programmatic use) |
@@ -30,6 +31,7 @@ See the skill for each group for full option details:
 - [auth/SKILL.md](auth/SKILL.md)
 - [debug/SKILL.md](debug/SKILL.md)
 - [download/SKILL.md](download/SKILL.md)
+- [local/SKILL.md](local/SKILL.md)
 - [project/SKILL.md](project/SKILL.md)
 - [simulate/SKILL.md](simulate/SKILL.md)
 - [schema/SKILL.md](schema/SKILL.md)

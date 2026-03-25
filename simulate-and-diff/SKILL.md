@@ -1,6 +1,6 @@
 ---
 name: meticulous-simulate-and-diff
-description: Run a Meticulous session simulation against a live URL and, if a base replay ID is provided, analyze any visual differences found — including pixel diffs and HTML diffs. Use when checking whether a code change has introduced visual regressions for a specific session.
+description: Run a Meticulous session simulation against a live URL and analyze the visual output — either by inspecting screenshots directly (quick-check mode) or by comparing pixel and HTML diffs against a base replay. Use when checking whether a code change has introduced visual regressions for a specific session.
 ---
 
 # Simulate a session and analyze diffs
@@ -23,12 +23,14 @@ meticulous download test-run --apiToken=$METICULOUS_API_TOKEN
 
 ## Step 1 — Run the simulation
 
+### With a base replay (diff mode)
+
 ```bash
 meticulous simulate \
   --sessionId=<sessionId> \
   --appUrl=<url> \
   --baseReplayId=<baseReplayId> \
-  --takeSnapshots
+  --headless
 ```
 
 If you don't have a base replay to compare against, omit `--baseReplayId`. Screenshots will still be stored locally.
@@ -81,6 +83,7 @@ Each screenshot has a corresponding metadata file containing a full HTML snapsho
 The base metadata is permanently cached when the simulation downloads the base replay, so no additional download is needed.
 
 Read both `.metadata.json` files. The relevant fields are:
+
 - `before.dom` — full HTML of the page at screenshot time; diff these two strings to understand what changed
 - `before.routeData.url` — which page/route the screenshot was taken on
 
@@ -90,7 +93,7 @@ The per-screenshot stdout lines also report `mismatchFraction` (proportion of pi
 
 ## Step 5 — Summarize the findings
 
-The key output from this skill is a **high-level human-readable description of what visually changed and why**. Use the pixel diff counts, route URLs, changed class names, and HTML diffs gathered above to answer: *what did the user experience change, and which part of the UI is responsible?*
+The key output from this skill is a **high-level human-readable description of what visually changed and why**. Use the pixel diff counts, route URLs, changed class names, and HTML diffs gathered above to answer: _what did the user experience change, and which part of the UI is responsible?_
 
 Present this in whatever format fits the current context (conversational answer, structured report, input to a calling workflow, etc.). Useful signals to draw on:
 
@@ -106,3 +109,4 @@ The comparison URL logged to stdout is always worth surfacing, as it lets a huma
 
 - The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
 - If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
+- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `iterative-frontend-dev` skill.
