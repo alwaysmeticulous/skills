@@ -20,7 +20,7 @@ You can also install it locally per-project instead of globally.
 
 ### 2. Set your API token
 
-The CLI requires a Meticulous API token. Grab one from [your project settings](https://app.meticulous.ai/docs/github-actions-v2) and add it to your environment:
+The CLI requires a Meticulous API token. See [the docs](https://app.meticulous.ai/docs/github-actions-v2) for how to create one, then add it to your environment:
 
 ```bash
 export METICULOUS_API_TOKEN=xyz...
