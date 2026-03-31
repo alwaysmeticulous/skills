@@ -65,6 +65,7 @@ Skills follow the [`SKILL.md` format](https://docs.cursor.com/context/rules-for-
 | [`iterative-dev`](iterative-dev/SKILL.md) | Iterative frontend development loop using Meticulous for per-step visual validation. Use when implementing a multi-step frontend change and want to catch visual regressions at each step. |
 | [`simulate-and-diff`](simulate-and-diff/SKILL.md) | Run a Meticulous session simulation against a live URL and analyze the visual output — either by inspecting screenshots directly or by comparing pixel and HTML diffs against a base replay. |
 | [`test-with-meticulous`](test-with-meticulous/SKILL.md) | Run after implementing any frontend change to verify its visual impact. Triggers a Meticulous test run, then inspects screenshot diffs to classify each visual change as intended or unintended. |
+| [`use-session-data`](use-session-data/SKILL.md) | Download and use structured Meticulous session data (user flows + network mocks) for testing code changes locally. Use when you need to understand what user interactions and API calls a test covers, or when you want network mocks for writing tests. |
 | | |
 | [`meticulous-cli`](meticulous-cli/SKILL.md) | Reference documentation for the Meticulous CLI tool, its commands, and global options. |
 

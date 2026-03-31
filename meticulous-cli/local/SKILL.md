@@ -22,6 +22,8 @@ meticulous local relevant-sessions [options]
 | `--apiToken` | string | — | Meticulous API token; falls back to `METICULOUS_API_TOKEN` env var |
 | `--showMaybeRelevant` | boolean | `false` | Also show sessions that may be affected by the changes |
 | `--startingPointSha` | string | — | Only consider changes since this commit SHA. The merge-base is still used to find the base test run, but the diff is computed from `startingPointSha` instead. Use in agentic loops to scope each iteration to only the latest changes. |
+| `--downloadSessionData` | boolean | `false` | Download each relevant session's data in a structured, agent-friendly directory format. See the [`use-session-data`](../../use-session-data/SKILL.md) skill for details on the output structure. |
+| `--outputDir` | string | `.meticulous/agent-sessions` | Output directory for downloaded session data (used with `--downloadSessionData`) |
 
 **Exit behaviour:** Exits with code 1 if the project cannot be retrieved or the repository is not a git repo.
 
@@ -81,4 +83,10 @@ meticulous local relevant-sessions --showMaybeRelevant
 
 # Only consider changes since a specific commit (useful after committing step N)
 meticulous local relevant-sessions --startingPointSha=abc1234
+
+# Download structured session data for relevant sessions
+meticulous local relevant-sessions --downloadSessionData
+
+# Download to a custom directory
+meticulous local relevant-sessions --downloadSessionData --outputDir=./test-data
 ```
