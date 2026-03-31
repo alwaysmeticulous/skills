@@ -20,7 +20,7 @@ The CLI can also be invoked as `meticulous` if installed globally or available o
 | Command | Purpose |
 |---------|---------|
 | `auth` | Authenticate with Meticulous (whoami, logout) |
-| `debug` | Set up AI-ready debug workspaces for investigating diffs, replays, and test runs |
+| `debug` | Set up AI-ready debug workspaces for investigating replay diffs and replays |
 | `download` | Download sessions, replays, and test runs locally |
 | `local` | Find sessions relevant to the current branch's code changes |
 | `project` | Inspect the project linked to an API token |

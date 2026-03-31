@@ -1,6 +1,6 @@
 ---
 name: meticulous-cli-debug
-description: Meticulous CLI debug commands for creating AI-ready workspaces to investigate visual diffs, replay issues, and test run failures. Covers `meticulous debug replay-diff`, `debug test-run`, `debug replays`, and `debug clean`.
+description: Meticulous CLI debug commands for creating AI-ready workspaces to investigate visual diffs and replays. Covers `meticulous debug replay-diff`, `debug replay`, and `debug clean`.
 ---
 
 # meticulous debug
@@ -40,64 +40,37 @@ meticulous debug replay-diff rd_abc123 --screenshot="checkout-page.png"
 
 ---
 
-## debug test-run
+## debug replay
 
 ```bash
-meticulous debug test-run <testRunId> [options]
+meticulous debug replay <replayId> [options]
 ```
 
-**Purpose:** Debug all diffs in a test run. Fetches replay diffs for the test run, prioritizing diffs with visual changes, and downloads up to `--maxDiffs` of them along with their replays and session data.
+**Purpose:** Debug a replay by ID, optionally comparing it against a base replay. Useful when you have replay IDs from simulation output rather than a replay diff ID.
 
 **Required arguments:**
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `testRunId` | string (positional) | The test run ID to debug |
+| `replayId` | string (positional) | The replay ID to debug (head replay) |
 
 **Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `--apiToken` | string | — | Meticulous API token; prompts OAuth login if omitted |
-| `--maxDiffs` | number | `5` | Maximum number of replay diffs to download |
-| `--workspaceName` | string | timestamp | Custom name for the debug workspace directory |
-| `--screenshot` | string | — | Screenshot filename to focus analysis on |
-
-**Example:**
-```bash
-meticulous debug test-run tr_xyz789
-meticulous debug test-run tr_xyz789 --maxDiffs=10
-```
-
----
-
-## debug replays
-
-```bash
-meticulous debug replays <replayIds..> [options]
-```
-
-**Purpose:** Debug one or more replays by ID. Downloads each replay's archive and session data, then creates a workspace. Useful when you have specific replay IDs rather than a diff or test run.
-
-**Required arguments:**
-
-| Argument | Type | Description |
-|----------|------|-------------|
-| `replayIds` | string[] (positional, variadic) | One or more replay IDs to debug |
-
-**Options:**
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--apiToken` | string | — | Meticulous API token; prompts OAuth login if omitted |
+| `--baseReplayId` | string | — | Base replay ID to compare against |
 | `--sessionId` | string | — | Override the session ID |
 | `--workspaceName` | string | timestamp | Custom name for the debug workspace directory |
 | `--screenshot` | string | — | Screenshot filename to focus analysis on |
 
 **Example:**
 ```bash
-meticulous debug replays rpl_aaa rpl_bbb
-meticulous debug replays rpl_aaa --sessionId=ses_override
+# Debug a single replay
+meticulous debug replay rpl_aaa
+
+# Debug with comparison against a base replay
+meticulous debug replay rpl_aaa --baseReplayId=rpl_bbb
 ```
 
 ---
@@ -156,4 +129,4 @@ cursor "<workspace-path>"
 
 ## Git Worktree
 
-When run from within a git repository, the command detects the repository root, fetches the relevant commit SHA (from the test run or replay), and creates a `git worktree` at `project-repo/` inside the workspace. This is automatically cleaned up by `debug clean`.
+When run from within a git repository, the command detects the repository root, fetches the relevant commit SHA (from the replay diff or replay), and creates a `git worktree` at `project-repo/` inside the workspace. This is automatically cleaned up by `debug clean`.
