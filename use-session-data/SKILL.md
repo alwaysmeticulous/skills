@@ -33,10 +33,9 @@ The downloaded data is organized as follows:
 
 ```
 .meticulous/agent-sessions/
-  README.md                           # Instructions for navigating the data
   manifest.json                       # List of all sessions with summary metadata
   sessions/
-    <session-id>/
+    <sanitized-session-id>/           # Special characters in session IDs are replaced for filesystem safety
       summary.json                    # Session overview: URL, viewport, duration, event count
       user-events.json                # Sequence of user interactions (clicks, typing, navigation)
       network-requests/
