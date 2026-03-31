@@ -65,13 +65,13 @@ Once you have the analysis, classify each visual difference:
 
 **If unexpected and the cause is clear:** fix the code and re-simulate.
 
-**If the cause is unclear:** create a self-contained AI-readable debug workspace (see the `meticulous-cli-debug` skill):
+**If the cause is unclear:** create a self-contained AI-readable debug workspace using the replay IDs from the simulation output URL (see the `meticulous-cli-debug` skill):
 
 ```bash
-meticulous debug replays <headReplayId> <baseReplayId>
+meticulous debug replay <headReplayId> --baseReplayId=<baseReplayId>
 ```
 
-Both IDs come from the simulation output: head replay ID is the last path segment of the `View simulation at:` URL; base replay ID is the `--baseReplayId` used. Open the workspace to diagnose, fix, and re-simulate.
+Both IDs come from the simulation output URL: the head replay ID is the last path segment of the `View simulation at:` URL; the base replay ID is the `--baseReplayId` used in the simulate command. Open the workspace to diagnose, fix, and re-simulate.
 
 ### Step 4 — Commit
 
