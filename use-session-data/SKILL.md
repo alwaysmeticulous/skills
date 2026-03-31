@@ -11,7 +11,7 @@ Use this workflow to get structured session data from Meticulous — the recorde
 Run the following command from the root of the git repository:
 
 ```bash
-npx @alwaysmeticulous/cli local relevant-sessions --downloadSessionData
+npx @alwaysmeticulous/cli local relevant-sessions --downloadSessionData --minimum-times-to-cover-each-line=1
 ```
 
 This will:
@@ -23,6 +23,7 @@ This will:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `--downloadSessionData` | boolean | `false` | Download structured session data for each relevant session |
+| `--minimum-times-to-cover-each-line` | number | — | Select at least this many sessions to cover each edited line, choosing the most diverse subset when more candidates are available |
 | `--outputDir` | string | `.meticulous/agent-sessions` | Output directory for session data |
 | `--showMaybeRelevant` | boolean | `false` | Also show sessions that may be affected |
 | `--startingPointSha` | string | — | Only consider changes since this commit SHA |
