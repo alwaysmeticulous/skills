@@ -11,20 +11,20 @@ Use this workflow to get structured session data from Meticulous — the recorde
 Run the following command from the root of the git repository:
 
 ```bash
-npx @alwaysmeticulous/cli local relevant-sessions --downloadSessionData --minimum-times-to-cover-each-line=1
+npx @alwaysmeticulous/cli local relevant-sessions --format=multi-file --minimum-times-to-cover-each-line=1
 ```
 
 This will:
 1. Identify which recorded sessions exercise the code paths changed on your current branch.
-2. Download each session's data in a structured, agent-friendly directory format to `.meticulous/agent-sessions/`.
+2. Download each session's data as a structured directory tree to `.meticulous/sessions/`.
 
 **Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--downloadSessionData` | boolean | `false` | Download structured session data for each relevant session |
+| `--format` | `multi-file` | — | Set to `multi-file` to download each relevant session's data as a structured directory tree |
 | `--minimum-times-to-cover-each-line` | number | — | Select at least this many sessions to cover each edited line, choosing the most diverse subset when more candidates are available |
-| `--outputDir` | string | `.meticulous/agent-sessions` | Output directory for session data |
+| `--outputDir` | string | `.meticulous/sessions` | Output directory for multi-file format |
 | `--showMaybeRelevant` | boolean | `false` | Also show sessions that may be affected |
 | `--startingPointSha` | string | — | Only consider changes since this commit SHA |
 
@@ -33,7 +33,7 @@ This will:
 The downloaded data is organized as follows:
 
 ```
-.meticulous/agent-sessions/
+.meticulous/sessions/
   manifest.json                       # List of all sessions with summary metadata
   sessions/
     <sanitized-session-id>/           # Special characters in session IDs are replaced for filesystem safety
@@ -93,11 +93,7 @@ Cross-reference the user events and network requests with your code changes to v
 If you already know which session IDs you need, you can download them directly:
 
 ```bash
-# Download a single session
-npx @alwaysmeticulous/cli download session --sessionId=<id> --format=agent-friendly
-
-# Download multiple sessions
-npx @alwaysmeticulous/cli download sessions --sessionIds=<id1>,<id2>,<id3>
+npx @alwaysmeticulous/cli download session --sessionId=<id> --format=multi-file
 ```
 
-Both commands write to `.meticulous/agent-sessions/` by default. Use `--outputDir` to change the output location.
+This writes to `.meticulous/sessions/` by default. Use `--outputDir` to change the output location.
