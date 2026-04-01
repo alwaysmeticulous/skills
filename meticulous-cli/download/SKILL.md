@@ -10,27 +10,36 @@ Commands for downloading Meticulous artifacts to the local `dataDir` (default `~
 ## download session
 
 ```bash
-meticulous download session --sessionId=<id> [--apiToken=<token>]
+meticulous download session --sessionId=<id> [--format=<format>] [--apiToken=<token>]
 ```
 
-**Purpose:** Download a recorded session's metadata and raw event data from Meticulous.
-
-**What gets downloaded (into `dataDir/sessions/<sessionId>/`):**
-- Session metadata JSON (recording info, timestamps, URL)
-- Session data file (the full event log used for replay)
+**Purpose:** Download a recorded session's data from Meticulous.
 
 **Options:**
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `--sessionId` | string | yes | ID of the session to download |
-| `--apiToken` | string | no | Meticulous API token; falls back to OAuth login if omitted |
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--sessionId` | string | — | ID of the session to download (required) |
+| `--format` | `json` \| `multi-file` | `json` | `json` downloads the original single JSON file. `multi-file` writes a structured directory tree. |
+| `--outputDir` | string | `.meticulous/sessions` | Output directory for multi-file format |
+| `--apiToken` | string | — | Meticulous API token; falls back to OAuth login if omitted |
 
-**Example:**
+**JSON format** (default) downloads into `dataDir/sessions/<sessionId>/`:
+- Session metadata JSON (recording info, timestamps, URL)
+- Session data file (the full event log used for replay)
+
+**Multi-file format** writes a structured directory tree. See the [`use-session-data`](../../use-session-data/SKILL.md) skill for details on the output structure.
+
+**Examples:**
 ```bash
+# Download raw session data as JSON (default)
 meticulous download session --sessionId=abc123
-# Downloaded session metadata to: /Users/you/.meticulous/sessions/abc123/metadata.json
-# Downloaded session data to: /Users/you/.meticulous/sessions/abc123/session.json
+
+# Download in multi-file structured format
+meticulous download session --sessionId=abc123 --format=multi-file
+
+# Download to a custom output directory
+meticulous download session --sessionId=abc123 --format=multi-file --outputDir=./test-data
 ```
 
 ---
