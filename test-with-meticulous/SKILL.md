@@ -74,7 +74,7 @@ For each representative screenshot:
 npx @alwaysmeticulous/cli agent image-files --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
 
-This downloads the screenshot images to a local tmp directory and prints the local file paths.
+This downloads the screenshot images to `~/.meticulous/agent-images/` and prints the local file paths.
 
 **Output format:**
 
