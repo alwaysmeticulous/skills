@@ -26,6 +26,14 @@ The CLI requires a Meticulous API token. See [the docs](https://app.meticulous.a
 export METICULOUS_API_TOKEN=xyz...
 ```
 
+Alternatively, store the token in `~/.meticulous/config.json`:
+
+```json
+{
+  "apiToken": "xyz..."
+}
+```
+
 ### 3. Install skills
 
 Install skills into your project using [`npx skills`](https://github.com/vercel-labs/skills):
@@ -45,6 +53,72 @@ npx skills add alwaysmeticulous/skills -g
 ```
 
 `npx skills` automatically detects your coding agent (Cursor, Claude Code, Codex, and [37+ more](https://github.com/vercel-labs/skills#available-agents)) and installs to the right location.
+
+### 4. Agent permissions
+
+The Meticulous skills run a small set of CLI commands and read downloaded screenshots from `~/.meticulous/agent-images/`. Pre-allowing these in your agent configuration avoids repeated permission prompts during a session.
+
+#### 4.1 Claude Code
+
+Add the following to `.claude/settings.json` (project-level) or `~/.claude/settings.json` (user-level). Replace `/HOME/DIR` with your home directory path (e.g. `/Users/alice`).
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(/HOME/DIR/.meticulous/agent-images/**)",
+      "Bash(npx @alwaysmeticulous/cli ci upload-assets --appDirectory * --repoDirectory * --waitForTestRunToComplete)",
+      "Bash(npx @alwaysmeticulous/cli ci upload-container --localImageTag * --repoDirectory . --waitForTestRunToComplete)",
+      "Bash(npx @alwaysmeticulous/cli agent test-run-diffs *)",
+      "Bash(npx @alwaysmeticulous/cli agent image-files *)",
+      "Bash(npx @alwaysmeticulous/cli agent dom-diff *)",
+      "Bash(npx @alwaysmeticulous/cli agent timeline-diff *)"
+    ]
+  }
+}
+```
+
+#### 4.2 Codex CLI
+
+Add the following to `~/.codex/rules/default.rules`:
+
+```starlark
+prefix_rule(
+    pattern = ["npx", "@alwaysmeticulous/cli", "ci", "upload-assets"],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["npx", "@alwaysmeticulous/cli", "ci", "upload-container"],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["npx", "@alwaysmeticulous/cli", "agent", "test-run-diffs"],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["npx", "@alwaysmeticulous/cli", "agent", "image-files"],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["npx", "@alwaysmeticulous/cli", "agent", "dom-diff"],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["npx", "@alwaysmeticulous/cli", "agent", "timeline-diff"],
+    decision = "allow",
+)
+```
+
+#### 4.3 Cursor
+
+Add the following entries to Cursor's Command Allowlist:
+
+- `npx @alwaysmeticulous/cli ci upload-assets`
+- `npx @alwaysmeticulous/cli ci upload-container`
+- `npx @alwaysmeticulous/cli agent test-run-diffs`
+- `npx @alwaysmeticulous/cli agent image-files`
+- `npx @alwaysmeticulous/cli agent dom-diff`
+- `npx @alwaysmeticulous/cli agent timeline-diff`
 
 ### Updating
 
