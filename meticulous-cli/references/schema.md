@@ -1,8 +1,3 @@
----
-name: meticulous-cli-schema
-description: Meticulous CLI schema command for outputting the full CLI command structure as JSON. Use when you need to programmatically inspect available commands and their options, or when building tooling that drives the Meticulous CLI.
----
-
 # meticulous schema
 
 ```bash

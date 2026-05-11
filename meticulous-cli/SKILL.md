@@ -27,14 +27,14 @@ The CLI can also be invoked as `meticulous` if installed globally or available o
 | `simulate` / `replay` | Replay a recorded session against a URL |
 | `schema` | Output the CLI command schema as JSON (for agent/programmatic use) |
 
-See the skill for each group for full option details:
-- [auth/SKILL.md](auth/SKILL.md)
-- [debug/SKILL.md](debug/SKILL.md)
-- [download/SKILL.md](download/SKILL.md)
-- [local/SKILL.md](local/SKILL.md)
-- [project/SKILL.md](project/SKILL.md)
-- [simulate/SKILL.md](simulate/SKILL.md)
-- [schema/SKILL.md](schema/SKILL.md)
+See the reference for each group for full option details:
+- [references/auth.md](references/auth.md)
+- [references/debug.md](references/debug.md)
+- [references/download.md](references/download.md)
+- [references/local.md](references/local.md)
+- [references/project.md](references/project.md)
+- [references/simulate.md](references/simulate.md)
+- [references/schema.md](references/schema.md)
 
 ## Global Options
 

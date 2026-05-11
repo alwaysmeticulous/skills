@@ -1,8 +1,3 @@
----
-name: meticulous-cli-debug
-description: Meticulous CLI debug commands for creating AI-ready workspaces to investigate visual diffs and replays. Covers `meticulous debug replay-diff`, `debug replay`, and `debug clean`.
----
-
 # meticulous debug
 
 Commands for setting up self-contained debug workspaces that bundle replay data, session recordings, diffs, analysis artifacts, and AI agent context files. The workspace is designed to be opened in an AI coding tool (Claude Code, Cursor, etc.) for assisted debugging.

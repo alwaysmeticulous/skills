@@ -1,8 +1,3 @@
----
-name: meticulous-cli-simulate
-description: Meticulous CLI simulate/replay command for replaying a recorded session against a live URL or snapshotted assets, taking screenshots, diffing against a base replay, and optionally stepping through events interactively. Covers `meticulous simulate` (alias `meticulous replay`).
----
-
 # meticulous simulate
 
 ```bash

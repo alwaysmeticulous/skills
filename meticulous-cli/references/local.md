@@ -1,8 +1,3 @@
----
-name: meticulous-cli-local
-description: Meticulous CLI local commands for finding user sessions relevant to the current branch's code changes. Covers `meticulous local relevant-sessions`.
----
-
 # meticulous local
 
 Commands for working with Meticulous data relative to your local git branch.

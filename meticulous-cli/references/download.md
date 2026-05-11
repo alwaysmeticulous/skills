@@ -1,8 +1,3 @@
----
-name: meticulous-cli-download
-description: Meticulous CLI download commands for fetching recorded sessions, replays, and test runs to the local data directory. Covers `meticulous download session`, `meticulous download replay`, and `meticulous download test-run`.
----
-
 # meticulous download
 
 Commands for downloading Meticulous artifacts to the local `dataDir` (default `~/.meticulous`). All commands are idempotent — if the artifact already exists locally it will not be re-fetched.
