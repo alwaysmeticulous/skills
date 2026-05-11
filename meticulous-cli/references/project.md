@@ -1,8 +1,3 @@
----
-name: meticulous-cli-project
-description: Meticulous CLI project commands for inspecting the project configuration linked to an API token. Covers `meticulous project show`.
----
-
 # meticulous project
 
 Commands for inspecting the Meticulous project associated with an API token.

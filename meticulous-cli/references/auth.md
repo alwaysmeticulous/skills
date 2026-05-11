@@ -1,8 +1,3 @@
----
-name: meticulous-cli-auth
-description: Meticulous CLI authentication commands. Use when logging in, checking who is authenticated, or logging out of the Meticulous CLI. Covers `meticulous auth whoami` and `meticulous auth logout`.
----
-
 # meticulous auth
 
 Authentication management for the Meticulous CLI. OAuth tokens are stored on disk and reused across sessions.
