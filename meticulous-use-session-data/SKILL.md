@@ -1,17 +1,19 @@
 ---
-name: use-session-data
+name: meticulous-use-session-data
 description: Download and use structured Meticulous session data (user flows + network mocks) for testing code changes locally. Use when you need to understand what user interactions and API calls a test covers, or when you want network mocks for writing tests.
 user_invocable: true
 ---
 
 Use this workflow to get structured session data from Meticulous — the recorded user flows and network mocks that cover your code changes.
 
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+
 ## Step 1 — Find relevant sessions and download their data
 
 Run the following command from the root of the git repository:
 
 ```bash
-npx @alwaysmeticulous/cli local relevant-sessions --format=multi-file --minimum-times-to-cover-each-line=1
+meticulous local relevant-sessions --format=multi-file --minimum-times-to-cover-each-line=1
 ```
 
 This will:
@@ -93,7 +95,7 @@ Cross-reference the user events and network requests with your code changes to v
 If you already know which session IDs you need, you can download them directly:
 
 ```bash
-npx @alwaysmeticulous/cli download session --sessionId=<id> --format=multi-file
+meticulous download session --sessionId=<id> --format=multi-file
 ```
 
 This writes to `.meticulous/sessions/` by default. Use `--outputDir` to change the output location.

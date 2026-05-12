@@ -7,13 +7,15 @@ description: Overview of the Meticulous CLI tool and its global options. Use whe
 
 The `meticulous` CLI records user sessions and replays them to catch visual regressions. It is installed as part of `@alwaysmeticulous/cli`.
 
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+
 ## Invocation
 
 ```bash
-npx @alwaysmeticulous/cli <command> [options]
+meticulous <command> [options]
 ```
 
-The CLI can also be invoked as `meticulous` if installed globally or available on `PATH`, but `npx @alwaysmeticulous/cli` is the typical usage.
+The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill installs it globally via `npm install --global @alwaysmeticulous/cli@latest` if missing. It can also be invoked as `npx @alwaysmeticulous/cli` when installed locally per-project.
 
 ## Command Groups
 

@@ -23,7 +23,7 @@ meticulous download session --sessionId=<id> [--format=<format>] [--apiToken=<to
 - Session metadata JSON (recording info, timestamps, URL)
 - Session data file (the full event log used for replay)
 
-**Multi-file format** writes a structured directory tree. See the [`use-session-data`](../../use-session-data/SKILL.md) skill for details on the output structure.
+**Multi-file format** writes a structured directory tree. See the [`meticulous-use-session-data`](../../meticulous-use-session-data/SKILL.md) skill for details on the output structure.
 
 **Examples:**
 ```bash

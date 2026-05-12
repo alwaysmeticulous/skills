@@ -1,5 +1,5 @@
 ---
-name: iterative-frontend-dev
+name: meticulous-iterative-dev
 description: Iterative frontend development loop using Meticulous for per-step visual validation. Use when implementing a multi-step frontend change and want to catch visual regressions and unintended side effects at each step, before the final cloud test run.
 user-invocable: true
 ---
@@ -8,11 +8,13 @@ user-invocable: true
 
 Use this skill when implementing a multi-step frontend change. After each step, run a quick local visual check using Meticulous to catch regressions and unintended side effects early. After all steps are complete, run a full cloud test run to validate across all recorded sessions.
 
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+
 ## Prerequisites
 
 - Local dev server running (e.g. `npm run dev` or `pnpm dev`), serving the app at a known URL such as `http://localhost:3000`
 - API token configured: `~/.meticulous/config.json` or `METICULOUS_API_TOKEN` environment variable
-- Meticulous CLI available: `npx @alwaysmeticulous/cli` or `meticulous` if installed globally
+- Meticulous CLI installed and on `PATH` (the `meticulous-cli-update` skill handles this)
 
 ---
 
@@ -92,6 +94,6 @@ Return to Step 1 for the next step.
 
 Once all steps are complete and committed, run a full cloud test run to validate across all recorded sessions (not just the 1–2 you simulated locally):
 
-> Follow the `test-with-meticulous` skill.
+> Follow the `meticulous-test` skill.
 
 The cloud run compares your branch against the base branch across the full golden set of sessions and reports any visual regressions.

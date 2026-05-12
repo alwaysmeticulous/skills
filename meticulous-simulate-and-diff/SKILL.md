@@ -7,6 +7,8 @@ description: Run a Meticulous session simulation against a live URL and analyze 
 
 This skill covers running a single simulation and interpreting the results. For the `simulate` command's full option reference see the `meticulous-cli-simulate` skill.
 
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+
 ## Prerequisites
 
 - A `sessionId` to replay
@@ -122,4 +124,4 @@ The comparison URL logged to stdout is always worth surfacing, as it lets a huma
 
 - The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
 - If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
-- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `iterative-frontend-dev` skill.
+- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `meticulous-iterative-dev` skill.
