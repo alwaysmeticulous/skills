@@ -38,7 +38,7 @@ Install skills into your project using [`npx skills`](https://github.com/vercel-
 
 ```bash
 # Claude Code only: create .claude/ first if it doesn't already exist
-mkdir .claude
+mkdir -p .claude
 
 # Interactive: pick which skills to install and which agents to install them for
 npx skills add alwaysmeticulous/skills
@@ -63,15 +63,10 @@ Add the following to `.claude/settings.json` (project-level) or `~/.claude/setti
   "permissions": {
     "allow": [
       "Read(/HOME/DIR/.meticulous/agent-images/**)",
-      "Bash(meticulous agent *)",
-      "Bash(meticulous auth whoami)",
-      "Bash(meticulous ci upload-assets --waitForTestRunToComplete --repoDirectory * --appDirectory *)",
-      "Bash(meticulous ci upload-container --waitForTestRunToComplete --repoDirectory * --localImageTag *)",
-      "Bash(meticulous debug *)",
-      "Bash(meticulous download *)",
-      "Bash(meticulous local *)",
-      "Bash(meticulous schema *)",
-      "Bash(meticulous simulate *)"
+      "Bash(meticulous *)",
+      "Bash(npm view @alwaysmeticulous/cli version)",
+      "Bash(npm install --global @alwaysmeticulous/cli@latest)",
+      "Bash(npx skills update --project)"
     ]
   }
 }
@@ -82,15 +77,10 @@ Add the following to `.claude/settings.json` (project-level) or `~/.claude/setti
 Add the following to `~/.codex/rules/default.rules`:
 
 ```starlark
-prefix_rule(pattern=["meticulous", "agent"], decision="allow")
-prefix_rule(pattern=["meticulous", "auth", "whoami"], decision="allow")
-prefix_rule(pattern=["meticulous", "ci", "upload-assets", "--waitForTestRunToComplete", "--repoDirectory"], decision="allow")
-prefix_rule(pattern=["meticulous", "ci", "upload-container", "--waitForTestRunToComplete", "--repoDirectory"], decision="allow")
-prefix_rule(pattern=["meticulous", "debug"], decision="allow")
-prefix_rule(pattern=["meticulous", "download"], decision="allow")
-prefix_rule(pattern=["meticulous", "local"], decision="allow")
-prefix_rule(pattern=["meticulous", "schema"], decision="allow")
-prefix_rule(pattern=["meticulous", "simulate"], decision="allow")
+prefix_rule(pattern=["meticulous"], decision="allow")
+prefix_rule(pattern=["npm", "view", "@alwaysmeticulous/cli", "version"], decision="allow")
+prefix_rule(pattern=["npm", "install", "--global", "@alwaysmeticulous/cli@latest"], decision="allow")
+prefix_rule(pattern=["npx", "skills", "update", "--project"], decision="allow")
 ```
 
 #### 4.3 Cursor
@@ -98,15 +88,10 @@ prefix_rule(pattern=["meticulous", "simulate"], decision="allow")
 Add the following entries to Cursor's Command Allowlist:
 
 ```bash
-meticulous agent
-meticulous auth whoami
-meticulous ci upload-assets --waitForTestRunToComplete --repoDirectory
-meticulous ci upload-container --waitForTestRunToComplete --repoDirectory
-meticulous debug
-meticulous download
-meticulous local
-meticulous schema
-meticulous simulate
+meticulous
+npm view @alwaysmeticulous/cli version
+npm install --global @alwaysmeticulous/cli@latest
+npx skills update --project
 ```
 
 ## Skills

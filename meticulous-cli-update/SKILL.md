@@ -1,6 +1,7 @@
 ---
 name: meticulous-cli-update
 description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) is installed and up to date, and install/update it if not. Run at the start of any Meticulous workflow, since the CLI is in active beta with frequent breaking changes.
+user_invocable: false
 ---
 
 # Install or update the Meticulous CLI
@@ -31,7 +32,7 @@ npm view @alwaysmeticulous/cli version
 
 If the installed version already matches the latest, skip to Step 4.
 
-Otherwise, update according to how the CLI is installed:
+Otherwise, update according to how the CLI is installed (requires network permission):
 
 - **Globally installed** (typical — `which meticulous` resolves to a path outside the current project):
   ```bash
@@ -61,7 +62,7 @@ If the command reports that "No authentication found", stop and ask the user to 
 
 ## Step 5 — Update the installed Meticulous skills
 
-The skills themselves are also under active development. Update them to the latest version:
+The skills themselves are also under active development. Update them to the latest version (requires network permission):
 
 ```bash
 npx skills update --project
