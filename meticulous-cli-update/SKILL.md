@@ -27,9 +27,9 @@ Then re-run `meticulous --version` to confirm it's on `PATH`, and skip to Step 4
 npm view @alwaysmeticulous/cli version
 ```
 
-## Step 3 — Update if outdated
+## Step 3 — Update the CLI if outdated
 
-If the installed version already matches the latest, you're done.
+If the installed version already matches the latest, skip to Step 4.
 
 Otherwise, update according to how the CLI is installed:
 
@@ -47,7 +47,19 @@ Otherwise, update according to how the CLI is installed:
   yarn add --dev @alwaysmeticulous/cli@latest
   ```
 
-## Step 4 — Update the installed Meticulous skills
+Re-run `meticulous --version` and confirm it matches the latest before proceeding.
+
+## Step 4 — Check authentication
+
+Verify the user is authenticated with Meticulous:
+
+```bash
+meticulous auth whoami
+```
+
+If the command reports that "No authentication found", stop and ask the user to run `meticulous auth whoami` themselves (it opens a browser to sign in). Do not attempt to run it on their behalf — it requires interactive sign-in.
+
+## Step 5 — Update the installed Meticulous skills
 
 The skills themselves are also under active development. Update them to the latest version:
 
@@ -55,6 +67,4 @@ The skills themselves are also under active development. Update them to the late
 npx skills update --project
 ```
 
-## Step 5 — Verify
-
-Re-run `meticulous --version` and confirm it matches the latest. Then proceed with the calling skill.
+Then proceed with the calling skill.

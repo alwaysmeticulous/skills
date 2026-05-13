@@ -20,13 +20,13 @@ If you are already given a test run id, then skip this step.
 
 ```
 # upload-assets
-meticulous ci upload-assets --appDirectory <path-to-build> --repoDirectory <path-to-repo> --waitForTestRunToComplete
+meticulous ci upload-assets --waitForTestRunToComplete --repoDirectory <path-to-repo> --appDirectory <path-to-build>
 
 # upload-container
-meticulous ci upload-container --localImageTag <image-tag> --repoDirectory <path-to-repo> --waitForTestRunToComplete
+meticulous ci upload-container --waitForTestRunToComplete --repoDirectory <path-to-repo> --localImageTag <image-tag>
 ```
 
-`--appDirectory` must point to the build output directory (e.g., `dist/` subfolder), whereas `--localImageTag` must point to the local Docker image tag. The `--repoDirectory` must point to the root of the git repository (e.g., `.`). The `--waitForTestRunToComplete` flag is required.
+The `--repoDirectory` must point to the root of the git repository (e.g., `.`). The `--waitForTestRunToComplete` flag is required. `--appDirectory` must point to the build output directory (e.g., `dist/` subfolder), whereas `--localImageTag` must point to the local Docker image tag. 
 
 The command will finish with status `Failure` if visual differences have been detected. Note the `testRunId` from the output.
 

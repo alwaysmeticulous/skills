@@ -20,21 +20,17 @@ You can also install it locally per-project instead of globally.
 
 The CLI is under active development with frequent breaking changes — re-run the same command to update to the latest version. The skills in this repo also invoke the [`meticulous-cli-update`](meticulous-cli-update/SKILL.md) skill at the start of every workflow to keep this in sync automatically.
 
-### 2. Set your API token
+### 2. Authentication
 
-The CLI requires a Meticulous API token. See [the docs](https://app.meticulous.ai/docs/github-actions-v2) for how to create one, then add it to your environment:
+Authenticate the CLI with your Meticulous account:
 
 ```bash
-export METICULOUS_API_TOKEN=xyz...
+meticulous auth whoami
 ```
 
-Alternatively, store the token in `~/.meticulous/config.json`:
+This will open a browser to sign in if you're not already authenticated.
 
-```json
-{
-  "apiToken": "xyz..."
-}
-```
+Alternatively, use an API token (see [the docs](https://app.meticulous.ai/docs/github-actions-v2) for how to create one) — either via the `METICULOUS_API_TOKEN` environment variable, or by storing `{"apiToken": "xyz..."}` in `~/.meticulous/config.json`.
 
 ### 3. Install skills
 
@@ -53,6 +49,7 @@ npx skills add alwaysmeticulous/skills --all --agents claude-code,codex,cursor
 # Update already-installed skills to the latest version
 npx skills update --project
 ```
+
 ### 4. Agent permissions
 
 The Meticulous skills run a small set of CLI commands and read downloaded screenshots from `~/.meticulous/agent-images/`. Pre-allowing these in your agent configuration avoids repeated permission prompts during a session.
@@ -67,8 +64,9 @@ Add the following to `.claude/settings.json` (project-level) or `~/.claude/setti
     "allow": [
       "Read(/HOME/DIR/.meticulous/agent-images/**)",
       "Bash(meticulous agent *)",
-      "Bash(meticulous ci upload-assets --appDirectory * --repoDirectory * --waitForTestRunToComplete)",
-      "Bash(meticulous ci upload-container --localImageTag * --repoDirectory . --waitForTestRunToComplete)",
+      "Bash(meticulous auth whoami)",
+      "Bash(meticulous ci upload-assets --waitForTestRunToComplete --repoDirectory * --appDirectory *)",
+      "Bash(meticulous ci upload-container --waitForTestRunToComplete --repoDirectory * --localImageTag *)",
       "Bash(meticulous debug *)",
       "Bash(meticulous download *)",
       "Bash(meticulous local *)",
@@ -85,8 +83,9 @@ Add the following to `~/.codex/rules/default.rules`:
 
 ```starlark
 prefix_rule(pattern=["meticulous", "agent"], decision="allow")
-prefix_rule(pattern=["meticulous", "ci", "upload-assets"], decision="allow")
-prefix_rule(pattern=["meticulous", "ci", "upload-container"], decision="allow")
+prefix_rule(pattern=["meticulous", "auth", "whoami"], decision="allow")
+prefix_rule(pattern=["meticulous", "ci", "upload-assets", "--waitForTestRunToComplete", "--repoDirectory"], decision="allow")
+prefix_rule(pattern=["meticulous", "ci", "upload-container", "--waitForTestRunToComplete", "--repoDirectory"], decision="allow")
 prefix_rule(pattern=["meticulous", "debug"], decision="allow")
 prefix_rule(pattern=["meticulous", "download"], decision="allow")
 prefix_rule(pattern=["meticulous", "local"], decision="allow")
@@ -98,14 +97,17 @@ prefix_rule(pattern=["meticulous", "simulate"], decision="allow")
 
 Add the following entries to Cursor's Command Allowlist:
 
-- `meticulous agent`
-- `meticulous ci upload-assets`
-- `meticulous ci upload-container`
-- `meticulous debug`
-- `meticulous download`
-- `meticulous local`
-- `meticulous schema`
-- `meticulous simulate`
+```bash
+meticulous agent
+meticulous auth whoami
+meticulous ci upload-assets --waitForTestRunToComplete --repoDirectory
+meticulous ci upload-container --waitForTestRunToComplete --repoDirectory
+meticulous debug
+meticulous download
+meticulous local
+meticulous schema
+meticulous simulate
+```
 
 ## Skills
 
