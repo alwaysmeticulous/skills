@@ -1,6 +1,7 @@
 ---
 name: meticulous-simulate-and-diff
 description: Run a Meticulous session simulation against a live URL and analyze the visual output — either by inspecting screenshots directly (quick-check mode) or by comparing pixel and HTML diffs against a base replay. Use when checking whether a code change has introduced visual regressions for a specific session.
+user-invocable: true
 ---
 
 # Simulate a session and analyze diffs

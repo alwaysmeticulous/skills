@@ -1,7 +1,7 @@
 ---
 name: meticulous-cli-update
-description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) is installed and up to date, and install/update it if not. Run at the start of any Meticulous workflow, since the CLI is in active beta with frequent breaking changes.
-user_invocable: false
+description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) is installed and up to date, and install/update it if not. Invoked at the start of every other Meticulous skill, since the CLI is in active beta with frequent breaking changes.
+user-invocable: false
 ---
 
 # Install or update the Meticulous CLI
@@ -50,15 +50,17 @@ Otherwise, update according to how the CLI is installed (requires network permis
 
 Re-run `meticulous --version` and confirm it matches the latest before proceeding.
 
-## Step 4 — Check authentication
+## Step 4 — Check authentication and project selection
 
-Verify the user is authenticated with Meticulous:
+Verify the user is authenticated with Meticulous and has a project selected:
 
 ```bash
 meticulous auth whoami
 ```
 
 If the command reports that "No authentication found", stop and ask the user to run `meticulous auth whoami` themselves (it opens a browser to sign in). Do not attempt to run it on their behalf — it requires interactive sign-in.
+
+If the command reports that "No project selected" (this happens when the user is a member of multiple projects), stop and ask the user to run `meticulous auth set-project` themselves to pick one. Do not attempt to run it on their behalf — it shows an interactive picker.
 
 ## Step 5 — Update the installed Meticulous skills
 

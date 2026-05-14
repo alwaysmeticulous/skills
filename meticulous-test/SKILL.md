@@ -1,7 +1,7 @@
 ---
 name: meticulous-test
 description: Run after implementing any frontend change to verify its visual impact. Triggers a Meticulous test run, then hands off to the `meticulous-review` skill to classify each visual change as intended or unintended. Use this before marking a frontend task as complete.
-user_invocable: true
+user-invocable: true
 ---
 
 To test a frontend change using Meticulous, follow the workflow below step by step, using the CLI commands as described.

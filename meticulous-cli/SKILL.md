@@ -1,6 +1,7 @@
 ---
 name: meticulous-cli
 description: Overview of the Meticulous CLI tool and its global options. Use when asking about the meticulous CLI in general, available commands, or global flags that apply to all commands.
+user-invocable: true
 ---
 
 # Meticulous CLI

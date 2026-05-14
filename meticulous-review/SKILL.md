@@ -1,7 +1,7 @@
 ---
 name: meticulous-review
 description: Review a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines, then classify each visual change as intended or unintended. Use when you have a `testRunId` and need to assess what visually changed.
-user_invocable: true
+user-invocable: true
 ---
 
 To review a Meticulous test run, follow the workflow below step by step, using the CLI commands as described.

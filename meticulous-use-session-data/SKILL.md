@@ -1,7 +1,7 @@
 ---
 name: meticulous-use-session-data
 description: Download and use structured Meticulous session data (user flows + network mocks) for testing code changes locally. Use when you need to understand what user interactions and API calls a test covers, or when you want network mocks for writing tests.
-user_invocable: true
+user-invocable: true
 ---
 
 Use this workflow to get structured session data from Meticulous — the recorded user flows and network mocks that cover your code changes.
