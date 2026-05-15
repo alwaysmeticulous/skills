@@ -40,10 +40,7 @@ Install skills into your project using [`npx skills`](https://github.com/vercel-
 # Claude Code only: create .claude/ first if it doesn't already exist
 mkdir -p .claude
 
-# Interactive: pick which skills to install and which agents to install them for
-npx skills add alwaysmeticulous/skills
-
-# Non-interactive: install all skills for the specified agents
+# Install all skills for the specified agents
 npx skills add alwaysmeticulous/skills --all --agents claude-code,codex,cursor
 
 # Update already-installed skills to the latest version
