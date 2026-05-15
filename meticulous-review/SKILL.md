@@ -1,41 +1,25 @@
 ---
-name: test-with-meticulous
-description: Run after implementing any frontend change to verify its visual impact. Triggers a Meticulous test run, then inspects screenshot diffs to classify each visual change as intended or unintended. Use this before marking a frontend task as complete.
-user_invocable: true
+name: meticulous-review
+description: Review a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines, then classify each visual change as intended or unintended. Use when you have a `testRunId` and need to assess what visually changed.
+user-invocable: true
 ---
 
-To test and debug frontend changes using Meticulous, follow the workflow below step by step, using the CLI commands as described.
+To review a Meticulous test run, follow the workflow below step by step, using the CLI commands as described.
 
-## Step 1 -- Trigger Meticulous test run
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
 
-If you are already given a test run id, then skip this step.
+## Prerequisites
 
-1. If possible, find out what build artefact Meticulous expects by checking `.github/workflows/` for one of the following steps:
-    - `uses: alwaysmeticulous/report-diffs-action/upload-assets@v1` - build assets
-    - `uses: alwaysmeticulous/report-diffs-action/upload-container@v1` - docker image
-2. Build the frontend.
-3. Upload the build artefact and trigger a Meticulous test run:
+- A `testRunId` for a completed Meticulous test run. If you don't have one yet, ask the user to provide one.
 
-```
-# upload-assets
-npx @alwaysmeticulous/cli ci upload-assets --appDirectory <path-to-build> --repoDirectory <path-to-repo> --waitForTestRunToComplete
+## Assess visual frontend changes
 
-# upload-container
-npx @alwaysmeticulous/cli ci upload-container --localImageTag <image-tag> --repoDirectory <path-to-repo> --waitForTestRunToComplete
-```
+Get an overview of all diffs, then visually inspect representative screenshots to cover all changes. The `domDiffIds` from Step 1 tell you which screenshots share the same structural DOM change — pick one representative per unique diff ID to efficiently cover all changes. For each representative, always look at the screenshot images first (Step 2) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 3) for additional structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images. The final report should cover all significant visual changes: each visual change deserves its own explanation.
 
-`--appDirectory` must point to the build output directory (e.g., `dist/` subfolder), whereas `--localImageTag` must point to the local Docker image tag. The `--repoDirectory` must point to the root of the git repository (e.g., `.`). The `--waitForTestRunToComplete` flag is required.
-
-The command will finish with status `Failure` if visual differences have been detected.
-
-## Step 2 -- Assess visual frontend changes
-
-Get an overview of all diffs, then visually inspect representative screenshots to cover all changes. The `domDiffIds` from Step 2a tell you which screenshots share the same structural DOM change — pick one representative per unique diff ID to efficiently cover all changes. For each representative, always look at the screenshot images first (Step 2b) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 2c) for additional structural detail, and the timeline (Step 2d) only when a diff is unexpected and not explained by the DOM or images. The final report should cover all significant visual changes: each visual change deserves its own explanation.
-
-### Step 2a -- Get the replay diff summary
+### Step 1 -- Get the replay diff summary
 
 ```
-npx @alwaysmeticulous/cli agent test-run-diffs --testRunId <testRunId>
+meticulous agent test-run-diffs --testRunId <testRunId>
 ```
 
 **Output format:** TSV on stdout, metadata on stderr.
@@ -62,16 +46,16 @@ Each row represents a screenshot where a visual pixel difference was detected be
 - `mismatch` (0-1, 5 decimal places) is the pixel mismatch fraction
 - `domDiffIds` is a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. Special values: `none` means no DOM changes were found (either computed successfully with no differences, or a matching screenshot where no diff is expected) -- the visual difference is purely pixel-level (e.g. anti-aliasing, rendering differences), so you must inspect the screenshot images to understand the change. `n/a` means the DOM diff is not applicable (e.g. error/warning outcomes where no comparison is possible). `error` means the DOM diff was attempted but failed (e.g. metadata unavailable or could not be retrieved).
 
-stderr shows: total counts, unique diff counts, and timing breakdown. Proceed to Steps 2b-2c for rows with `outcome=diff`.
+stderr shows: total counts, unique diff counts, and timing breakdown. Proceed to Steps 2-3 for rows with `outcome=diff`.
 
 Use `domDiffIds` to identify which subset of diffs to inspect. Screenshots sharing the same ID contain the same structural DOM change — pick one representative per unique ID for efficient coverage.
 
-### Step 2b -- Get screenshot images
+### Step 2 -- Get screenshot images
 
 For each representative screenshot:
 
 ```
-npx @alwaysmeticulous/cli agent image-files --replayDiffId <replayDiffId> --screenshotName <screenshotName>
+meticulous agent image-files --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
 
 This downloads the screenshot images to `~/.meticulous/agent-images/` and prints the local file paths.
@@ -90,10 +74,10 @@ Open the `before`, `after`, and `diffImage` files to visually inspect the change
 
 Alternative: use `image-urls` instead of `image-files` to get URLs to the images rather than downloading them locally.
 
-### Step 2c -- Inspect the DOM diff (for structural detail)
+### Step 3 -- Inspect the DOM diff (for structural detail)
 
 ```
-npx @alwaysmeticulous/cli agent dom-diff --replayDiffId <replayDiffId> --screenshotName <screenshotName>
+meticulous agent dom-diff --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
 
 Optional: pass `--context <N|full>` to control how many context lines surround each hunk (default 3). Use `--context 0` for no context, or `--context full` for a single unified diff with full file context.
@@ -110,14 +94,14 @@ Optional: pass `--context <N|full>` to control how many context lines surround e
 +<a href="/projects/Foo/Bar/test-runs/abc123"><span class="inline-flex items-center rounded-lg bg-zinc-800">Original: abc123</span></a>
 ```
 
-To view a single diff block, add `--index <0-based index>` (maps to the position in the `domDiffIds` list from Step 2a).
+To view a single diff block, add `--index <0-based index>` (maps to the position in the `domDiffIds` list from Step 1).
 
-### Step 2d -- Get the replay timeline (optional, for diagnosing unexpected diffs)
+### Step 4 -- Get the replay timeline (optional, for diagnosing unexpected diffs)
 
 If a diff is unexpected and the images/DOM don't make it obvious why it happened:
 
 ```
-npx @alwaysmeticulous/cli agent timeline-diff --replayDiffId <replayDiffId>
+meticulous agent timeline-diff --replayDiffId <replayDiffId>
 ```
 
 **Output format:** TSV on stdout, replay IDs on stderr.
@@ -144,7 +128,7 @@ For each representative screenshot, classify the visual change as **intended** o
 For unintended changes:
 
 1. If the change is a side effect of your code, attempt to fix it so the code achieves the intended result without the unwanted visual change, then re-run the test.
-2. Use the timeline (Step 2d) to check for failed network requests, redirects, or other anomalies that could explain diffs unrelated to your code.
+2. Use the timeline (Step 4) to check for failed network requests, redirects, or other anomalies that could explain diffs unrelated to your code.
 3. If you can confidently explain the cause (e.g. a flaky timestamp, a non-deterministic element), note the explanation.
 4. If you cannot explain or fix it, flag it to the user.
 

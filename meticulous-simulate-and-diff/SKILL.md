@@ -1,11 +1,14 @@
 ---
 name: meticulous-simulate-and-diff
 description: Run a Meticulous session simulation against a live URL and analyze the visual output — either by inspecting screenshots directly (quick-check mode) or by comparing pixel and HTML diffs against a base replay. Use when checking whether a code change has introduced visual regressions for a specific session.
+user-invocable: true
 ---
 
 # Simulate a session and analyze diffs
 
 This skill covers running a single simulation and interpreting the results. For the `simulate` command's full option reference see the `meticulous-cli-simulate` skill.
+
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
 
 ## Prerequisites
 
@@ -122,4 +125,4 @@ The comparison URL logged to stdout is always worth surfacing, as it lets a huma
 
 - The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
 - If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
-- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `iterative-frontend-dev` skill.
+- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `meticulous-iterative-dev` skill.
