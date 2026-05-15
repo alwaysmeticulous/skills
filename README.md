@@ -59,7 +59,7 @@ Add the following to `.claude/settings.json` (project-level) or `~/.claude/setti
 {
   "permissions": {
     "allow": [
-      "Read(/HOME/DIR/.meticulous/agent-images/**)",
+      "Read(~/.meticulous/agent-images/**)",
       "Bash(meticulous *)",
       "Skill(meticulous-cli-update)",
       "Bash(npm view @alwaysmeticulous/cli version)",
