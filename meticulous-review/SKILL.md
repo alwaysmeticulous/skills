@@ -35,7 +35,7 @@ Then make both of these as **two separate parallel tool calls** (not shell `&`) 
 **A) Search issue comments** for a Meticulous bot comment:
 
 ```bash
-gh api repos/{owner}/{repo}/issues/{pr_number}/comments | python3 -c "
+gh api "repos/{owner}/{repo}/issues/{pr_number}/comments?direction=desc&per_page=100" | python3 -c "
 import json, re, sys
 for c in json.load(sys.stdin):
     if 'meticulous' in c.get('user',{}).get('login','').lower() or 'meticulous' in c.get('body','').lower():
@@ -100,7 +100,7 @@ The output can be large (100s of rows for large test suites). **Do not read all 
 ```bash
 meticulous agent test-run-diffs --testRunId <testRunId> 2>/dev/null | python3 -c "
 import sys
-seen_patterns = {}   # domDiffIds -> (replayDiffId, screenshotName, mismatch)
+seen_patterns = {}   # pattern_key -> (replayDiffId, screenshotName, mismatch)
 seen_screenshots = set()  # (replayDiffId, screenshotName) already claimed
 for line in sys.stdin:
     parts = line.rstrip('\n').split('\t')
@@ -108,11 +108,13 @@ for line in sys.stdin:
         continue
     replayDiffId, screenshotName, _, _, _, mismatch, domDiffIds = parts[:7]
     screenshot_key = (replayDiffId, screenshotName)
-    if domDiffIds not in seen_patterns and screenshot_key not in seen_screenshots:
-        seen_patterns[domDiffIds] = (replayDiffId, screenshotName, float(mismatch))
+    # pixel-only diffs (domDiffIds='none') are unrelated to each other — key by screenshot
+    pattern_key = screenshot_key if domDiffIds == 'none' else domDiffIds
+    if pattern_key not in seen_patterns and screenshot_key not in seen_screenshots:
+        seen_patterns[pattern_key] = (replayDiffId, screenshotName, float(mismatch))
         seen_screenshots.add(screenshot_key)
 for key, (rid, sname, m) in sorted(seen_patterns.items(), key=lambda x: -x[1][2])[:5]:
-    print(f'{rid}\t{sname}\t{m:.5f}\t{key}')
+    print(f'{rid}\t{sname}\t{m:.5f}\t{key if isinstance(key, str) else \"none\"}')
 sys.stderr.write(f'Total unique patterns: {len(seen_patterns)}\n')
 "
 ```
@@ -140,11 +142,7 @@ meticulous agent dom-diff --replayDiffId <replayDiffId> --screenshotName <screen
 - **mismatch > 0.90** — read `diffImage`, `before`, and `after` all at once. At this level the diff image is a near-solid red blob with no diagnostic value on its own; having before/after immediately avoids a second round-trip.
 - **mismatch ≤ 0.90** — read `diffImage` only first. Only read `before`/`after` if the diff image alone is insufficient.
 
-Skip `dom-diff` entirely if `domDiffIds` is `none`.
-
-For `dom-diff`: output is unified diff format with `[diff N]` block headers. Pipe through `| head -100` for noisy diffs. Use `--context 0` for minimal context, `--context full` for complete file. Use `--index N` to view a single diff block by position.
-
-Skip `dom-diff` entirely if `domDiffIds` is `none` (pixel-only diff).
+For `dom-diff`: output is unified diff format with `[diff N]` block headers. Pipe through `| head -100` for noisy diffs. Use `--context 0` for minimal context, `--context full` for complete file. Use `--index N` to view a single diff block by position. Skip `dom-diff` entirely if `domDiffIds` is `none` (pixel-only diff).
 
 Alternative for images: use `image-urls` instead of `image-files` to get URLs rather than downloading locally.
 

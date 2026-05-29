@@ -23,7 +23,7 @@ try:
         checked = checked.replace(tzinfo=datetime.timezone.utc)
     age = (now - checked).total_seconds()
     installed = subprocess.check_output(['meticulous', '--version']).decode().strip()
-    if age < 3600 and cache.get('installedVersion') == installed and cache.get('latestVersion'):
+    if age < 3600 and cache.get('installedVersion') == installed and cache.get('installedVersion') == cache.get('latestVersion'):
         print('CACHE_HIT:' + installed)
         sys.exit(0)
 except Exception:
