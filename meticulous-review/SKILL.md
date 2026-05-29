@@ -1,22 +1,87 @@
 ---
 name: meticulous-review
-description: Review a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines, then classify each visual change as intended or unintended. Use when you have a `testRunId` and need to assess what visually changed.
+description: Review a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines, then classify each visual change as intended or unintended. Use when you have a `testRunId`, a PR URL, or a PR number and need to assess what visually changed.
 user-invocable: true
 ---
 
 To review a Meticulous test run, follow the workflow below step by step, using the CLI commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
-
 ## Prerequisites
 
-- A `testRunId` for a completed Meticulous test run. If you don't have one yet, ask the user to provide one.
+- A `testRunId` for a completed Meticulous test run, **or** a PR URL / PR number. If you have neither, ask the user to provide one.
+
+## Startup
+
+Fire `meticulous-cli-update` as a **non-blocking background task** — do not wait for it before proceeding. It only needs to complete before you run any `meticulous agent` commands in Step 1. If it detects an actual update is needed, it will surface that before Step 1 runs.
+
+Concurrently, proceed immediately to Step 0 (or Step 1 if a `testRunId` was provided directly).
+
+## Step 0 — Resolve the testRunId from a PR
+
+First, determine `{owner}`, `{repo}`, and `{pr_number}`. If only a bare PR number was given, resolve the repo:
+
+```bash
+gh repo view --json nameWithOwner --jq '.nameWithOwner'
+```
+
+Get the PR's head SHA:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{pr_number} --jq '.head.sha'
+```
+
+Then make both of these as **two separate parallel tool calls** (not shell `&`) — dispatch them in a single message and wait for both:
+
+**A) Search issue comments** for a Meticulous bot comment:
+
+```bash
+gh api repos/{owner}/{repo}/issues/{pr_number}/comments | python3 -c "
+import json, re, sys
+for c in json.load(sys.stdin):
+    if 'meticulous' in c.get('user',{}).get('login','').lower() or 'meticulous' in c.get('body','').lower():
+        m = re.search(r'test-runs/([a-zA-Z0-9_-]+)', c.get('body',''))
+        if m: print(m.group(1)); sys.exit(0)
+sys.exit(1)
+"
+```
+
+**B) Search check-runs** on the head commit for a Meticulous check with a `testRunId`:
+
+```bash
+gh api repos/{owner}/{repo}/commits/{head_sha}/check-runs | python3 -c "
+import json, sys
+for cr in json.load(sys.stdin).get('check_runs', []):
+    if 'meticulous' in cr.get('name', '').lower() or 'meticulous' in (cr.get('app') or {}).get('name', '').lower():
+        ext = cr.get('external_id', '')
+        try:
+            data = json.loads(ext)
+            tid = (data.get('data') or {}).get('testRunId')
+            if tid: print(tid); sys.exit(0)
+            if (data.get('data') or {}).get('type') == 'not-yet-run':
+                print('NOT_YET_RUN'); sys.exit(2)
+        except Exception:
+            pass
+sys.exit(1)
+"
+```
+
+**Resolution logic:**
+- If either search finds a `testRunId`, use it and continue to Step 1.
+- If the check-run search exits with code 2 (`NOT_YET_RUN`), stop and tell the user: "Meticulous has not run for this PR yet — no deployment has triggered it."
+- If both exit with code 1, stop and tell the user: "No Meticulous test run found for this PR — the check may still be pending."
 
 ## Assess visual frontend changes
 
-Get an overview of all diffs, then visually inspect representative screenshots to cover all changes. The `domDiffIds` from Step 1 tell you which screenshots share the same structural DOM change — pick one representative per unique diff ID to efficiently cover all changes. For each representative, always look at the screenshot images first (Step 2) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 3) for additional structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images. The final report should cover all significant visual changes: each visual change deserves its own explanation.
+Get an overview of all diffs, then visually inspect representative screenshots to cover all changes. Follow these efficiency rules:
 
-### Step 1 -- Get the replay diff summary
+- **Batch image fetches in parallel** — after selecting all representatives from Step 1, dispatch all `image-files` calls in a single parallel batch, then read all diff images together. Do not fetch sequentially.
+- **Start with the diff image only** — for each representative, read only the `diffImage` first. Only read `before`/`after` if the diff image alone is insufficient to understand the change.
+- **Stop early once patterns are fully characterized** — once you have identified and verified all distinct diff patterns (same `domDiffIds` = same root cause), stop inspecting further representatives of already-understood patterns.
+- **High-mismatch diffs** — a mismatch >50% typically indicates a large intentional UI change. Verify one representative but don't over-investigate unless something looks unexpected.
+
+The `domDiffIds` from Step 1 tell you which screenshots share the same structural DOM change — pick one representative per unique ID. Use the DOM diff (Step 3) for structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images. The final report should cover all significant visual changes: each visual change deserves its own explanation.
+
+### Step 1 -- Get the replay diff summary and select representatives
 
 ```
 meticulous agent test-run-diffs --testRunId <testRunId>
@@ -30,71 +95,58 @@ stdout columns:
 replayDiffId	screenshotName	index	total	outcome	mismatch	domDiffIds
 ```
 
-Example output:
+The output can be large (100s of rows for large test suites). **Do not read all rows** — pipe through this clustering script immediately to extract only the representatives you need:
 
+```bash
+meticulous agent test-run-diffs --testRunId <testRunId> 2>/dev/null | python3 -c "
+import sys
+seen_patterns = {}   # domDiffIds -> (replayDiffId, screenshotName, mismatch)
+seen_screenshots = set()  # (replayDiffId, screenshotName) already claimed
+for line in sys.stdin:
+    parts = line.rstrip('\n').split('\t')
+    if len(parts) < 7 or parts[4] != 'diff':
+        continue
+    replayDiffId, screenshotName, _, _, _, mismatch, domDiffIds = parts[:7]
+    screenshot_key = (replayDiffId, screenshotName)
+    if domDiffIds not in seen_patterns and screenshot_key not in seen_screenshots:
+        seen_patterns[domDiffIds] = (replayDiffId, screenshotName, float(mismatch))
+        seen_screenshots.add(screenshot_key)
+for key, (rid, sname, m) in sorted(seen_patterns.items(), key=lambda x: -x[1][2])[:5]:
+    print(f'{rid}\t{sname}\t{m:.5f}\t{key}')
+sys.stderr.write(f'Total unique patterns: {len(seen_patterns)}\n')
+"
 ```
-CqctwLpPC7	after-event-0	1	5	diff	0.00234	1;3
-RRMGQft7PD	after-event-174	3	8	diff	0.01050	1;2
-CLkCJ8WLrJ	after-event-8	2	4	diff	0.00100	none
-Ct8HwmJNzM	end-state	5	5	flake	0.00010	error
-Ab3xKLmN9Q	after-event-12	3	6	missing-base	0.00000	n/a
-```
 
-Each row represents a screenshot where a visual pixel difference was detected between the base (before) and head (after) replay. Rows with `outcome=diff` are confirmed visual differences; other outcomes (`flake`, `error`, `warning`, `missing-base`, `missing-head`) are informational.
+stdout: up to 5 tab-separated representatives (replayDiffId, screenshotName, mismatch, domDiffIds), sorted by mismatch descending. Representatives are deduplicated on both `domDiffIds` pattern and `(replayDiffId, screenshotName)` pair — no duplicate image fetches.
+stderr (informational, ignore): total unique pattern count. If the count exceeds 5, increase the `[:5]` cap in the script or re-run with a higher limit to avoid silently missing patterns.
 
-- `outcome`: `diff` (visual pixel difference), `flake`, `error`, `warning`, `missing-base`, `missing-head`
-- `mismatch` (0-1, 5 decimal places) is the pixel mismatch fraction
-- `domDiffIds` is a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. Special values: `none` means no DOM changes were found (either computed successfully with no differences, or a matching screenshot where no diff is expected) -- the visual difference is purely pixel-level (e.g. anti-aliasing, rendering differences), so you must inspect the screenshot images to understand the change. `n/a` means the DOM diff is not applicable (e.g. error/warning outcomes where no comparison is possible). `error` means the DOM diff was attempted but failed (e.g. metadata unavailable or could not be retrieved).
+- `mismatch` >0.5: likely a large intentional UI change — verify one representative, don't over-investigate
+- `domDiffIds` = `none`: pixel-only diff — inspect image only, skip `dom-diff`
+- `domDiffIds` = `n/a`/`error`: not applicable or failed
 
-stderr shows: total counts, unique diff counts, and timing breakdown. Proceed to Steps 2-3 for rows with `outcome=diff`.
+### Steps 2+3 -- Get images and DOM diffs in parallel
 
-Use `domDiffIds` to identify which subset of diffs to inspect. Screenshots sharing the same ID contain the same structural DOM change — pick one representative per unique ID for efficient coverage.
-
-### Step 2 -- Get screenshot images
-
-For each representative screenshot:
+For each representative, dispatch `image-files` **and** `dom-diff` in the **same parallel batch** — they are independent. Send all calls for all representatives in a single message.
 
 ```
 meticulous agent image-files --replayDiffId <replayDiffId> --screenshotName <screenshotName>
-```
-
-This downloads the screenshot images to `~/.meticulous/agent-images/` and prints the local file paths.
-
-**Output format:**
-
-```
-outcome: <outcome>
-screenshot: <path>          # present for missing-base/missing-head
-before: <path>              # present for diff/no-diff
-after: <path>
-diffImage: <path>
-```
-
-Open the `before`, `after`, and `diffImage` files to visually inspect the change. The `diffImage` is usually the most informative — it highlights exactly which pixels changed. Always inspect the images to understand the actual visual impact of a change, even when the DOM diff is clear.
-
-Alternative: use `image-urls` instead of `image-files` to get URLs to the images rather than downloading them locally.
-
-### Step 3 -- Inspect the DOM diff (for structural detail)
-
-```
 meticulous agent dom-diff --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
 
-Optional: pass `--context <N|full>` to control how many context lines surround each hunk (default 3). Use `--context 0` for no context, or `--context full` for a single unified diff with full file context.
+`image-files` downloads to `~/.meticulous/agent-images/` and prints local file paths (`before`, `after`, `diffImage`).
 
-**Output format:** Unified diff (`+`/`-` format) with leading indentation stripped. All diff blocks are separated by `[diff 0]`, `[diff 1]`, etc. headers. Example:
+**Image reading strategy based on mismatch:**
 
-```
-[diff 0]
- <span class="text-zinc-400">#7687</span>
--<span class="min-w-0 flex-1 truncate transition-colors">Use divergence-aware comparison</span>
-+<span class="min-w-0 flex-1 truncate transition-colors" data-tooltip-id=":r1h:">Use divergence-aware comparison</span>
-[diff 1]
- <span class="inline-flex items-center rounded-lg bg-zinc-800">Temporal Workflow</span></a>
-+<a href="/projects/Foo/Bar/test-runs/abc123"><span class="inline-flex items-center rounded-lg bg-zinc-800">Original: abc123</span></a>
-```
+- **mismatch > 0.90** — read `diffImage`, `before`, and `after` all at once. At this level the diff image is a near-solid red blob with no diagnostic value on its own; having before/after immediately avoids a second round-trip.
+- **mismatch ≤ 0.90** — read `diffImage` only first. Only read `before`/`after` if the diff image alone is insufficient.
 
-To view a single diff block, add `--index <0-based index>` (maps to the position in the `domDiffIds` list from Step 1).
+Skip `dom-diff` entirely if `domDiffIds` is `none`.
+
+For `dom-diff`: output is unified diff format with `[diff N]` block headers. Pipe through `| head -100` for noisy diffs. Use `--context 0` for minimal context, `--context full` for complete file. Use `--index N` to view a single diff block by position.
+
+Skip `dom-diff` entirely if `domDiffIds` is `none` (pixel-only diff).
+
+Alternative for images: use `image-urls` instead of `image-files` to get URLs rather than downloading locally.
 
 ### Step 4 -- Get the replay timeline (optional, for diagnosing unexpected diffs)
 
@@ -134,10 +186,7 @@ For unintended changes:
 
 ### Final report
 
-After investigating all diffs and attempting fixes for any fixable issues, produce a summary that covers **all significant visual changes**. The number of explanation points should be at least as many as the number of unique domDiffIds you inspected — each visual change deserves its own explanation.
+Produce a concise summary covering all distinct visual change patterns. One explanation per unique pattern is sufficient — don't repeat the same explanation for multiple sessions sharing the same root cause.
 
-1. **Intended changes**: For each distinct visual change that is a desired outcome of the task, describe what changed visually (based on the diff image) and why it's intended.
-2. **Unintended changes** (if any): For each, include:
-   - A representative `replayDiffId` / `screenshotName`
-   - What the visual change looks like (e.g. "new badge element added", "layout shift in header")
-   - Whether it's a side effect of your code or unrelated, and your best assessment of the cause
+1. **Intended changes**: what changed visually and why it's expected
+2. **Unintended changes** (if any): `replayDiffId`/`screenshotName`, what it looks like, best assessment of cause
