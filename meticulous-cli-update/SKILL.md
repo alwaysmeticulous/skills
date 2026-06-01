@@ -1,12 +1,24 @@
 ---
 name: meticulous-cli-update
-description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) is installed and up to date, and install/update it if not. Invoked at the start of every other Meticulous skill, since the CLI is in active beta with frequent breaking changes.
+description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) is installed and up to date, and install/update it if not. Invoked at the start of every other Meticulous skill, since the CLI is under active development with frequent changes and improvements.
 user-invocable: false
 ---
 
 # Install or update the Meticulous CLI
 
-The `@alwaysmeticulous/cli` package is under active development and ships frequent breaking changes. Other Meticulous skills assume the `meticulous` command is on `PATH` and up to date, so run this skill once at the start of any Meticulous workflow.
+The `@alwaysmeticulous/cli` package is under active development and ships frequent changes and improvements. Other Meticulous skills assume the `meticulous` command is on `PATH` and up to date, so run this skill once at the start of any Meticulous workflow.
+
+This only needs to run **once per conversation**. If you've already run it earlier in this conversation, skip it — there's no need to re-check the version or re-update on every Meticulous skill invocation.
+
+## How to handle the install/update commands
+
+This skill normally runs as a sub-step of another Meticulous skill. The install/update commands below (Steps 1, 3, and 5) are security-sensitive — they install packages and reach the network — so treat them as **best-effort and non-blocking**:
+
+- You generally can't tell in advance whether a command is whitelisted. If it's whitelisted it runs silently; if not, attempting it surfaces a permission prompt. Either outcome is fine — let that be how you find out.
+- **If a command needs permission you don't have** (a prompt appears, or the user declines it), treat that as the signal to *recommend rather than force*. Tell the user it's recommended to do XYZ — e.g. "It's recommended to update the Meticulous CLI by running `npm install --global @alwaysmeticulous/cli@latest`" — and move on. A declined prompt is **not** a failure; it just means "do it later."
+- **If the user doesn't want to run it now, continue anyway.** Do not stop the workflow; carry on with the remaining steps and then return to the calling skill. The only hard requirement is that the `meticulous` command exists at all (Step 1) — if it's genuinely not installed and the user declines to install it, no Meticulous skill can proceed, so stop there.
+
+The read-only checks (`meticulous --version`, `npm view …`, `meticulous auth whoami`) are safe to run directly.
 
 ## Step 1 — Check the installed version
 
@@ -14,13 +26,13 @@ The `@alwaysmeticulous/cli` package is under active development and ships freque
 meticulous --version
 ```
 
-**If the command is not found**, the CLI is not installed. Install it globally:
+**If the command is not found**, the CLI is not installed. Install it globally (best-effort, see the note above):
 
 ```bash
 npm install --global @alwaysmeticulous/cli@latest
 ```
 
-Then re-run `meticulous --version` to confirm it's on `PATH`, and skip to Step 4.
+If installing isn't whitelisted, recommend the user run that command themselves. Because no Meticulous skill can run without the CLI, this is the one case where you should stop and wait if the user declines — there's nothing to continue with. Once installed, re-run `meticulous --version` to confirm it's on `PATH`, and skip to Step 4.
 
 ## Step 2 — Check the latest published version
 
@@ -32,7 +44,7 @@ npm view @alwaysmeticulous/cli version
 
 If the installed version already matches the latest, skip to Step 4.
 
-Otherwise, update according to how the CLI is installed (requires network permission):
+Otherwise, update according to how the CLI is installed (best-effort, see the note above — if updating isn't whitelisted, recommend the user run the appropriate command and continue regardless):
 
 - **Globally installed** (typical — `which meticulous` resolves to a path outside the current project):
   ```bash
@@ -48,7 +60,7 @@ Otherwise, update according to how the CLI is installed (requires network permis
   yarn add --dev @alwaysmeticulous/cli@latest
   ```
 
-Re-run `meticulous --version` and confirm it matches the latest before proceeding.
+If the update ran, re-run `meticulous --version` and confirm it matches the latest before proceeding.
 
 ## Step 4 — Check authentication and project selection
 
@@ -64,10 +76,10 @@ If the command reports that "No project selected" (this happens when the user is
 
 ## Step 5 — Update the installed Meticulous skills
 
-The skills themselves are also under active development. Update them to the latest version (requires network permission):
+The skills themselves are also under active development. Update them to the latest version (best-effort, see the note above):
 
 ```bash
 npx skills update --project
 ```
 
-Then proceed with the calling skill.
+If this isn't whitelisted, recommend the user run it themselves. Either way — whether it ran, or the user declined — proceed with the calling skill.

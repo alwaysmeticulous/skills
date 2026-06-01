@@ -1,16 +1,28 @@
 ---
 name: meticulous-review
-description: Review a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines, then classify each visual change as intended or unintended. Use when you have a `testRunId` and need to assess what visually changed.
+description: Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Use when asked to review Meticulous test results, or while reviewing or babysitting a PR to assess and fix a failing Meticulous Tests CI check.
 user-invocable: true
 ---
 
 To review a Meticulous test run, follow the workflow below step by step, using the CLI commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Prerequisites
 
-- A `testRunId` for a completed Meticulous test run. If you don't have one yet, ask the user to provide one.
+You need a `testRunId` for a completed Meticulous test run.
+
+If the user or conversation already provides one, use it. Otherwise, infer it from the PR's GitHub checks:
+
+```
+gh pr checks --json name,link,state \
+  --jq '.[] | select(.name | startswith("Meticulous Tests")) | select((.link // "") | contains("/test-runs/")) | {name, state, testRunId: (.link | capture("/test-runs/(?<id>[^/?#]+)").id)}'
+```
+
+The `testRunId` is the final path segment of the check's details URL (`app.meticulous.ai/.../test-runs/<id>`).
+
+- **Check not finished yet:** the filter on `/test-runs/` excludes checks that are still queued or in progress (their `link` is `null` or empty; the `// ""` guard keeps jq from erroring on those rows). If the command returns nothing, wait and re-run, or ask the user.
+- **New commit pushed:** no extra steps — `gh pr checks` always reflects the PR's current head, so the same command returns the latest run's `testRunId`.
 
 ## Assess visual frontend changes
 

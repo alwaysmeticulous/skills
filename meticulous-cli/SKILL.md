@@ -8,7 +8,7 @@ user-invocable: true
 
 The `meticulous` CLI records user sessions and replays them to catch visual regressions. It is installed as part of `@alwaysmeticulous/cli`.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Invocation
 
