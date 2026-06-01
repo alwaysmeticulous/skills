@@ -8,7 +8,7 @@ user-invocable: true
 
 Use this skill when implementing a multi-step frontend change. After each step, run a quick local visual check using Meticulous to catch regressions and unintended side effects early. After all steps are complete, run a full cloud test run to validate across all recorded sessions.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Prerequisites
 

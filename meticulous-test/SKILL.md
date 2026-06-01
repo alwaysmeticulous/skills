@@ -1,12 +1,12 @@
 ---
 name: meticulous-test
-description: Run after implementing any frontend change to verify its visual impact. Triggers a Meticulous test run, then hands off to the `meticulous-review` skill to classify each visual change as intended or unintended. Use this before marking a frontend task as complete.
+description: Run a Meticulous test run after implementing a frontend change, then hands off to the `meticulous-review` skill to classify each visual change as intended or unintended. Use when implementing a feature autonomously end-to-end before creating a PR.
 user-invocable: true
 ---
 
 To test a frontend change using Meticulous, follow the workflow below step by step, using the CLI commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Step 1 -- Trigger Meticulous test run
 
