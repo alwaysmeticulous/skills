@@ -16,12 +16,12 @@ If the user or conversation already provides one, use it. Otherwise, infer it fr
 
 ```
 gh pr checks --json name,link,state \
-  --jq '.[] | select(.name | startswith("Meticulous Tests")) | select(.link | contains("/test-runs/")) | {name, state, testRunId: (.link | capture("/test-runs/(?<id>[^/?#]+)").id)}'
+  --jq '.[] | select(.name | startswith("Meticulous Tests")) | select((.link // "") | contains("/test-runs/")) | {name, state, testRunId: (.link | capture("/test-runs/(?<id>[^/?#]+)").id)}'
 ```
 
 The `testRunId` is the final path segment of the check's details URL (`app.meticulous.ai/.../test-runs/<id>`).
 
-- **Check not finished yet:** the filter on `/test-runs/` excludes checks that are still queued or in progress (their `link` is empty). If the command returns nothing, wait and re-run, or ask the user.
+- **Check not finished yet:** the filter on `/test-runs/` excludes checks that are still queued or in progress (their `link` is `null` or empty; the `// ""` guard keeps jq from erroring on those rows). If the command returns nothing, wait and re-run, or ask the user.
 - **New commit pushed:** no extra steps — `gh pr checks` always reflects the PR's current head, so the same command returns the latest run's `testRunId`.
 
 ## Assess visual frontend changes
