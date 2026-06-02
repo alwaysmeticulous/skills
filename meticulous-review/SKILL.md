@@ -1,6 +1,6 @@
 ---
 name: meticulous-review
-description: Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Use when asked to review Meticulous test results, or while reviewing or babysitting a PR to assess and fix a failing Meticulous Tests CI check.
+description: Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Accepts a test-run ID, a PR number (resolved against the local repo), or otherwise identifies the test-run ID from the local repo's current branch and its associated PR. Use when asked to review Meticulous test results, or while reviewing or babysitting a PR to assess and fix a failing Meticulous Tests CI check.
 user-invocable: true
 ---
 
@@ -10,18 +10,23 @@ To review a Meticulous test run, follow the workflow below step by step, using t
 
 ## Prerequisites
 
-You need a `testRunId` for a completed Meticulous test run.
+You need a `testRunId` for a completed Meticulous test run. Resolve it from whatever you were given:
 
-If the user or conversation already provides one, use it. Otherwise, infer it from the PR's GitHub checks:
+- **A test-run ID** — a 20+ character alphanumeric string (e.g. `aB3xK9LmN7QrStUvWxYz12`), as opposed to a short PR number. Use it directly and skip the rest of this section.
+- **A PR number** — a short integer. Resolve it against the local repo by passing it to `gh pr checks <pr-number>` below.
+- **Nothing** — omit the argument; `gh pr checks` resolves the PR associated with the current branch in the local repo.
+
+To infer the `testRunId` from a PR's GitHub checks (pass the PR number when you have one, omit it to use the current branch's PR):
 
 ```
-gh pr checks --json name,link,state \
-  --jq '.[] | select(.name | startswith("Meticulous Tests")) | select((.link // "") | contains("/test-runs/")) | {name, state, testRunId: (.link | capture("/test-runs/(?<id>[^/?#]+)").id)}'
+gh pr checks <pr-number> --json name,link,state,bucket \
+  --jq '.[] | select(.name | startswith("Meticulous Tests")) | select(.bucket != "pending") | select((.link // "") | contains("/test-runs/")) | {name, state, testRunId: (.link | capture("/test-runs/(?<id>[^/?#]+)").id)}'
 ```
 
 The `testRunId` is the final path segment of the check's details URL (`app.meticulous.ai/.../test-runs/<id>`).
 
-- **Check not finished yet:** the filter on `/test-runs/` excludes checks that are still queued or in progress (their `link` is `null` or empty; the `// ""` guard keeps jq from erroring on those rows). If the command returns nothing, wait and re-run, or ask the user.
+- **Only completed runs:** `select(.bucket != "pending")` drops checks that are still queued or in progress, so a half-finished check can't hand you a `testRunId` for an incomplete run. This keeps both passing and failing runs — a `fail` bucket is a completed run with visual diffs, which is exactly what you're usually here to review. Don't narrow this to passing checks only.
+- **Check not finished yet:** the `/test-runs/` filter further excludes checks whose `link` is still `null` or empty (the `// ""` guard keeps jq from erroring on those rows). If the command returns nothing, wait and re-run, or ask the user.
 - **New commit pushed:** no extra steps — `gh pr checks` always reflects the PR's current head, so the same command returns the latest run's `testRunId`.
 
 ## Assess visual frontend changes
