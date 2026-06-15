@@ -1,6 +1,6 @@
 ---
 name: meticulous-review
-description: Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Accepts a test-run ID, a PR number (resolved against the local repo), or otherwise identifies the test-run ID from the local repo's current branch and its associated PR. Use when asked to review Meticulous test results, or while reviewing or babysitting a PR to assess and fix a failing Meticulous Tests CI check.
+description: Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID or commit SHA. Use when asked to review Meticulous test results, or while reviewing or babysitting a pull/merge request to assess and fix a failing Meticulous Tests CI check.
 user-invocable: true
 ---
 
@@ -8,36 +8,24 @@ To review a Meticulous test run, follow the workflow below step by step, using t
 
 > Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 
-## Prerequisites
-
-You need a `testRunId` for a completed Meticulous test run. Resolve it from whatever you were given:
-
-- **A test-run ID** — a 20+ character alphanumeric string (e.g. `aB3xK9LmN7QrStUvWxYz12`), as opposed to a short PR number. Use it directly and skip the rest of this section.
-- **A PR number** — a short integer. Resolve it against the local repo by passing it to `gh pr checks <pr-number>` below.
-- **Nothing** — omit the argument; `gh pr checks` resolves the PR associated with the current branch in the local repo.
-
-To infer the `testRunId` from a PR's GitHub checks (pass the PR number when you have one, omit it to use the current branch's PR):
-
-```
-gh pr checks <pr-number> --json name,link,state,bucket \
-  --jq '.[] | select(.name | startswith("Meticulous Tests")) | select(.bucket != "pending") | select((.link // "") | contains("/test-runs/")) | {name, state, testRunId: (.link | capture("/test-runs/(?<id>[^/?#]+)").id)}'
-```
-
-The `testRunId` is the final path segment of the check's details URL (`app.meticulous.ai/.../test-runs/<id>`).
-
-- **Only completed runs:** `select(.bucket != "pending")` drops checks that are still queued or in progress, so a half-finished check can't hand you a `testRunId` for an incomplete run. This keeps both passing and failing runs — a `fail` bucket is a completed run with visual diffs, which is exactly what you're usually here to review. Don't narrow this to passing checks only.
-- **Check not finished yet:** the `/test-runs/` filter further excludes checks whose `link` is still `null` or empty (the `// ""` guard keeps jq from erroring on those rows). If the command returns nothing, wait and re-run, or ask the user.
-- **New commit pushed:** no extra steps — `gh pr checks` always reflects the PR's current head, so the same command returns the latest run's `testRunId`.
-
 ## Assess visual frontend changes
 
 Get an overview of all diffs, then visually inspect representative screenshots to cover all changes. The `domDiffIds` from Step 1 tell you which screenshots share the same structural DOM change — pick one representative per unique diff ID to efficiently cover all changes. For each representative, always look at the screenshot images first (Step 2) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 3) for additional structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images. The final report should cover all significant visual changes: each visual change deserves its own explanation.
 
 ### Step 1 -- Get the replay diff summary
 
+Run from the local checkout to resolve the test run from the current commit's git HEAD — the common case when reviewing or babysitting a pull/merge request whose branch is checked out locally. First make sure HEAD matches the remote head CI ran on (e.g. `git pull`), or you may review a stale or missing run:
+
 ```
-meticulous agent test-run-diffs --testRunId <testRunId>
+meticulous agent test-run-diffs
 ```
+
+The command prints the resolved `testRunId`, the commit, and the run status to stderr. To target a run explicitly instead, pass one of:
+
+- `--testRunId <id>` — a 20+ character alphanumeric string (e.g. `aB3xK9LmN7QrStUvWxYz12`).
+- `--commitSha <sha>` — the latest test run for that commit is used. For a pull/merge request, resolve its head commit SHA (e.g. via the hosting platform's CLI or API) and pass it here.
+
+If the resolved run is still in progress, the command reports it and exits; pass `--waitForTestRunToComplete` to block until it finishes and then show diffs. If no run is found for the commit, the run hasn't been triggered yet — wait and re-run, or ask the user.
 
 **Output format:** TSV on stdout, metadata on stderr.
 

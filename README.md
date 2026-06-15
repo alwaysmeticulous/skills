@@ -99,7 +99,7 @@ Skills follow the [`SKILL.md` format](https://docs.cursor.com/context/rules-for-
 | Skill | Description |
 |-------|-------------|
 | **Review skills** | |
-| [`meticulous-review`](meticulous-review/SKILL.md) | Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Use when asked to review Meticulous test results, or while reviewing or babysitting a PR to assess and fix a failing Meticulous Tests CI check. |
+| [`meticulous-review`](meticulous-review/SKILL.md) | Analyze a completed Meticulous test run — fetch the diff summary, inspect representative screenshots, DOM diffs, and timelines. Resolves the test run from the current commit. Use when asked to review Meticulous test results, or while reviewing or babysitting a pull/merge request to assess and fix a failing Meticulous Tests CI check. |
 | [`meticulous-test`](meticulous-test/SKILL.md) | Run a Meticulous test run after implementing a frontend change, then hands off to the `meticulous-review` skill to classify each visual change as intended or unintended. Use when implementing a feature autonomously end-to-end before creating a PR. |
 | **Experimental skills** | |
 | [`meticulous-iterative-dev`](meticulous-iterative-dev/SKILL.md) | Iterative frontend development loop using Meticulous for per-step visual validation. Use when implementing a multi-step frontend change and want to catch visual regressions and unintended side effects at each step, before the final cloud test run. |
