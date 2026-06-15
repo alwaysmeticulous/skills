@@ -13,7 +13,7 @@ Use this skill when implementing a multi-step frontend change. After each step, 
 ## Prerequisites
 
 - Local dev server running (e.g. `npm run dev` or `pnpm dev`), serving the app at a known URL such as `http://localhost:3000`
-- API token configured: `~/.meticulous/config.json` or `METICULOUS_API_TOKEN` environment variable
+- Authenticated with Meticulous: run `meticulous auth whoami` to log in via OAuth (an API token via `METICULOUS_API_TOKEN` or `~/.meticulous/config.json` also works)
 - Meticulous CLI installed and on `PATH` (the `meticulous-cli-update` skill handles this)
 
 ---
