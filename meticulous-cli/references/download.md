@@ -87,15 +87,15 @@ meticulous download test-run [--testRunId=<id>] [--apiToken=<token>]
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `--testRunId` | string | `latest` | ID of the test run to download; omit to fetch the most recent run |
-| `--apiToken` | string | — | Meticulous API token (no OAuth fallback — must be provided or set via env) |
+| `--apiToken` | string | — | Meticulous API token; falls back to the `METICULOUS_API_TOKEN` env var, or prompts OAuth login if neither is set |
 | `--scope` | string | `coverage-only` | What to download: `coverage-only` or `app-container-logs` |
 
 **Example:**
 ```bash
 # Download coverage for the latest test run
-meticulous download test-run --apiToken=$TOKEN
+meticulous download test-run
 
 # Download coverage for a specific test run
-meticulous download test-run --apiToken=$TOKEN --testRunId=tr_abc
+meticulous download test-run --testRunId=tr_abc
 # Downloaded test run data to: /Users/you/.meticulous/test-runs/tr_abc/
 ```

@@ -26,7 +26,7 @@ The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill i
 | `debug` | Set up AI-ready debug workspaces for investigating replay diffs and replays |
 | `download` | Download sessions, replays, and test runs locally |
 | `local` | Find sessions relevant to the current branch's code changes |
-| `project` | Inspect the project linked to an API token |
+| `project` | Inspect the project you're authenticated against |
 | `simulate` / `replay` | Replay a recorded session against a URL |
 | `schema` | Output the CLI command schema as JSON (for agent/programmatic use) |
 
@@ -50,9 +50,11 @@ These options are accepted by every command:
 | `--rawJson` | string | — | Pass all options as a JSON string (useful for programmatic/agent invocation) |
 | `--dryRun` | boolean | `false` | Print what the command would do without making any changes |
 
-## API Token
+## Authentication
 
-Most commands require an API token, passed via `--apiToken` or the `METICULOUS_API_TOKEN` environment variable. The token is scoped to a specific organization/project.
+Commands authenticate via OAuth. The login token is stored on disk and reused across sessions — if you're not logged in, an interactive command opens a browser sign-in automatically (or run `meticulous auth whoami` to trigger it). See [references/auth.md](references/auth.md).
+
+An API token (via `--apiToken` or the `METICULOUS_API_TOKEN` environment variable, scoped to a specific organization/project) is also supported, and is the way to authenticate in non-interactive contexts such as CI.
 
 ## Example
 

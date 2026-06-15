@@ -19,7 +19,7 @@ This skill covers running a single simulation and interpreting the results. For 
 If you don't have a `baseReplayId`, you can find one from a downloaded test run:
 
 ```bash
-meticulous download test-run --apiToken=$METICULOUS_API_TOKEN
+meticulous download test-run
 # Then inspect ~/.meticulous/test-runs/<testRunId>/coverage.json
 # or check the testCases[].replayId fields
 ```
