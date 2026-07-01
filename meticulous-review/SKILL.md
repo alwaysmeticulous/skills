@@ -10,7 +10,7 @@ To review a Meticulous test run, follow the workflow below step by step, using t
 
 ## Assess visual frontend changes
 
-Get an overview of the diffs, then visually inspect each one. By default the summary returns a pre-selected representative set — one screenshot per unique structural DOM change — so every returned row is worth inspecting and you don't need to deduplicate them yourself. **The rows are returned in priority order (most representative / most significant first), so work through them top to bottom.** For each, always look at the screenshot images first (Step 2) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 3) for additional structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images.
+Get an overview of the diffs, then visually inspect each one. By default the summary returns a pre-selected representative set — one screenshot per unique structural DOM change — so every returned row is worth inspecting. **The rows are returned in priority order (most representative / most significant first), so work through them top to bottom.** For each, always look at the screenshot images first (Step 2) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 3) for additional structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images.
 
 **To conclude a PR is good, every returned diff must be checked and confirmed** — each one classified as either intended or explained (see the Decision guide). A PR is only safe to approve once there are no unexplained or unintended changes left. The final report should cover all significant visual changes: each deserves its own explanation.
 
@@ -22,16 +22,16 @@ Run from the local checkout to resolve the test run from the current commit's gi
 meticulous agent test-run-diffs
 ```
 
-The command prints the resolved `testRunId`, the commit, and the run status to stderr. To target a run explicitly instead, pass one of:
+All non-result output goes to stderr (stdout carries only the diff table); pass `--verbose` to see the resolved commit and `testRunId`. To target a run explicitly instead, pass one of:
 
 - `--testRunId <id>` — a 20+ character alphanumeric string (e.g. `aB3xK9LmN7QrStUvWxYz12`).
 - `--commitSha <sha>` — the latest test run for that commit is used. For a pull/merge request, resolve its head commit SHA (e.g. via the hosting platform's CLI or API) and pass it here.
 
-If the resolved run is still in progress, the command reports it and exits; pass `--waitForTestRunToComplete` to block until it finishes and then show diffs. If no run is found for the commit, the run hasn't been triggered yet — wait and re-run, or ask the user.
+If the resolved run is still in progress, the command blocks until it finishes and then shows the diffs (waiting is the default); pass `--dontWaitForTestRunToComplete` to instead report the in-progress run and exit immediately. If no run is found for the commit, the run hasn't been triggered yet — wait and re-run, or ask the user.
 
 **Output format:** TSV on stdout, metadata on stderr.
 
-By default the output is limited to the **selected** screenshots — a representative subset with one screenshot per unique structural DOM change — so you can inspect every returned row without deduplicating yourself. Rows are returned in **priority order** (most representative / most significant first; added/removed screenshots last) — inspect them in that order.
+By default the output is limited to the **selected** screenshots — a representative subset with one screenshot per unique structural DOM change. Rows are returned in **priority order** (most representative / most significant first; added/removed screenshots last) — inspect them in that order.
 
 stdout columns:
 
@@ -49,7 +49,7 @@ Ct8HwmJNzM	end-state	flake	0.00010
 Ab3xKLmN9Q	after-event-12	missing-base	0.00000
 ```
 
-Each row represents a screenshot compared between the base (before) and head (after) replay. Rows are already in priority order (most representative first, added/removed screenshots last). Rows with `outcome=diff` are confirmed visual differences; other outcomes (`flake`, `different-size`, `missing-base`, `missing-head`) are informational.
+Each row represents a screenshot compared between the base (before) and head (after) replay. Rows are in priority order (most representative first, added/removed screenshots last). Rows with `outcome=diff` are confirmed visual differences; other outcomes (`flake`, `different-size`, `missing-base`, `missing-head`) are informational.
 
 - `outcome`:
   - `diff` — visual pixel difference between base and head.
@@ -64,9 +64,9 @@ stderr shows: total counts, unique diff counts, and timing breakdown. Every retu
 
 **Optional flags** (to widen the output beyond the default selected subset):
 
-- `--orderByReplayDiffs` — order rows by replay diff then event order (so each session's screenshots read as a flow) instead of by importance. `index` then becomes the screenshot's position within its replay diff and a `total` column (screenshots in that replay diff) is added.
-- `--includeAllDiffs` — return every diff rather than just the selected representative subset. Adds an `isSelected` column (`true`/`false`) marking which rows are in the selected subset.
 - `--includeDomDiffIds` — add a `domDiffIds` column: a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. Special values: `none` means no DOM changes were found (the visual difference is purely pixel-level, e.g. anti-aliasing — inspect the screenshot images to understand it); `n/a` means the DOM diff is not applicable (e.g. `missing-base` / `missing-head`, where only one side exists); `error` means the DOM diff was attempted but failed (e.g. metadata unavailable). Combine with `--includeAllDiffs` to see how the selected subset covers the full set of unique diff IDs.
+- `--includeAllDiffs` — return every diff rather than just the selected representative subset. Adds an `isSelected` column (`true`/`false`) marking which rows are in the selected subset.
+- `--orderByReplayDiffs` — order rows by replay diff then event order (so each session's screenshots read as a flow) instead of by importance. `index` then becomes the screenshot's position within its replay diff and a `total` column (screenshots in that replay diff) is added.
 
 ### Step 2 -- Get screenshot images
 

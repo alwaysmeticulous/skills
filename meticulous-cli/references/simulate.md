@@ -25,7 +25,7 @@ Exactly one of these determines what URL the session is replayed against:
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `--sessionId` | string | **yes** | — | ID of the session to replay |
-| `--apiToken` | string | no | — | Meticulous API token; prompts OAuth login if omitted in interactive context |
+| `--apiToken` | string | no | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 | `--commitSha` | string | no | — | Git commit SHA to associate with this replay |
 | `--appUrl` | string | no | — | URL to replay against (see Replay Target above) |
 | `--simulationIdForAssets` | string | no | — | Use snapshotted assets from this prior simulation (conflicts with `--appUrl`) |

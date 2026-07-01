@@ -17,7 +17,7 @@ meticulous download session --sessionId=<id> [--format=<format>] [--apiToken=<to
 | `--sessionId` | string | — | ID of the session to download (required) |
 | `--format` | `json` \| `multi-file` | `json` | `json` downloads the original single JSON file. `multi-file` writes a structured directory tree. |
 | `--outputDir` | string | `.meticulous/sessions` | Output directory for multi-file format |
-| `--apiToken` | string | — | Meticulous API token; falls back to OAuth login if omitted |
+| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 
 **JSON format** (default) downloads into `dataDir/sessions/<sessionId>/`:
 - Session metadata JSON (recording info, timestamps, URL)
@@ -60,7 +60,7 @@ meticulous download replay --replayId=<id> [--apiToken=<token>]
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
 | `--replayId` | string | yes | ID of the replay to download |
-| `--apiToken` | string | no | Meticulous API token; falls back to OAuth login if omitted |
+| `--apiToken` | string | no | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 
 **Example:**
 ```bash
@@ -87,7 +87,7 @@ meticulous download test-run [--testRunId=<id>] [--apiToken=<token>]
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `--testRunId` | string | `latest` | ID of the test run to download; omit to fetch the most recent run |
-| `--apiToken` | string | — | Meticulous API token; falls back to the `METICULOUS_API_TOKEN` env var, or prompts OAuth login if neither is set |
+| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 | `--scope` | string | `coverage-only` | What to download: `coverage-only` or `app-container-logs` |
 
 **Example:**

@@ -70,9 +70,23 @@ Verify the user is authenticated with Meticulous and has a project selected:
 meticulous auth whoami
 ```
 
-If the command reports that "No authentication found", stop and ask the user to run `meticulous auth whoami` themselves (it opens a browser to sign in). Do not attempt to run it on their behalf — it requires interactive sign-in.
+**If it reports "No authentication found"**, sign-in is needed. Sign-in is browser SSO, so a human always has to complete it in a browser; your job is to start the flow and hand them the URL:
 
-If the command reports that "No project selected" (this happens when the user is a member of multiple projects), stop and ask the user to run `meticulous auth set-project` themselves to pick one. Do not attempt to run it on their behalf — it shows an interactive picker.
+```bash
+meticulous auth login --non-interactive
+```
+
+This prints a login URL and then waits on a local callback server, so run it in the background, then surface the printed URL to the user and ask them to open it and complete sign-in. Once they do, the command finishes and stores the token, and you can continue.
+
+Alternatively, ask the user to run `meticulous auth login` themselves — at their own terminal that opens the browser directly.
+
+**If it reports "No project selected"** (this happens when the user belongs to multiple projects — including right after a non-interactive login, which skips the project picker), a project must be chosen before project-scoped commands work. Ask the user which organization/project to use (if you don't already know), then pin it non-interactively:
+
+```bash
+meticulous auth set-project --project "Organization/Project"
+```
+
+Alternatively, ask the user to run `meticulous auth set-project` themselves (it shows an interactive picker).
 
 ## Step 5 — Update the installed Meticulous skills
 
