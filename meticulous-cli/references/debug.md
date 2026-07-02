@@ -22,7 +22,7 @@ meticulous debug replay-diff <replayDiffId> [options]
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--apiToken` | string | — | Meticulous API token; prompts OAuth login if omitted |
+| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 | `--sessionId` | string | — | Override the session ID for this replay diff |
 | `--workspaceName` | string | timestamp | Custom name for the debug workspace directory |
 | `--screenshot` | string | — | Screenshot filename to focus analysis on |
@@ -53,7 +53,7 @@ meticulous debug replay <replayId> [options]
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--apiToken` | string | — | Meticulous API token; prompts OAuth login if omitted |
+| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 | `--baseReplayId` | string | — | Base replay ID to compare against |
 | `--sessionId` | string | — | Override the session ID |
 | `--workspaceName` | string | timestamp | Custom name for the debug workspace directory |

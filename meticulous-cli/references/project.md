@@ -14,7 +14,7 @@ meticulous project show [--apiToken=<token>]
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `--apiToken` | string | no | Meticulous API token; falls back to the `METICULOUS_API_TOKEN` env var, or prompts OAuth login if neither is set. |
+| `--apiToken` | string | no | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 
 **Output:** Logs the full project object, including organization name, project name, and associated configuration.
 
