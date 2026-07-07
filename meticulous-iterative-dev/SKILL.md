@@ -67,7 +67,7 @@ Once you have the analysis, classify each visual difference:
 
 **If unexpected and the cause is clear:** fix the code and re-simulate.
 
-**If the cause is unclear:** create a self-contained AI-readable debug workspace using the replay IDs from the simulation output URL (see the `meticulous-cli-debug` skill):
+**If the cause is unclear:** create a self-contained AI-readable debug workspace using the replay IDs from the simulation output URL (see debug.md):
 
 ```bash
 meticulous debug replay <headReplayId> --baseReplayId=<baseReplayId>
