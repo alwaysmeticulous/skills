@@ -8,6 +8,8 @@ To review a Meticulous test run, follow the workflow below step by step, using t
 
 > Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 
+Every `meticulous agent …` command in this workflow has an equivalent tool on the hosted [Meticulous MCP server](https://app.meticulous.ai/api/mcp), named `get_…` (e.g. `agent test-run-diffs` → `get_test_run_diffs`). Each tool returns the same data as the CLI command's `--json` output. The steps below use the CLI commands and note the matching MCP tool.
+
 ## Assess visual frontend changes
 
 Get an overview of the diffs, then visually inspect each one. By default the summary returns a pre-selected representative set — one screenshot per unique structural DOM change — so every returned row is worth inspecting. **The rows are returned in priority order (most representative / most significant first), so work through them top to bottom.** For each, always look at the screenshot images first (Step 2) — the diff image is the most informative way to understand what actually changed. Use the DOM diff (Step 3) for additional structural detail, and the timeline (Step 4) only when a diff is unexpected and not explained by the DOM or images.
@@ -22,6 +24,8 @@ Run from the local checkout to resolve the test run from the current commit's gi
 meticulous agent test-run-diffs
 ```
 
+_MCP tool: `get_test_run_diffs`._
+
 All non-result output goes to stderr (stdout carries only the diff table); pass `--verbose` to see the resolved commit and `testRunId`. To target a run explicitly instead, pass one of:
 
 - `--testRunId <id>` — a 20+ character alphanumeric string (e.g. `aB3xK9LmN7QrStUvWxYz12`).
@@ -31,42 +35,36 @@ If the resolved run is still in progress, the command blocks until it finishes a
 
 **Output format:** TSV on stdout, metadata on stderr.
 
-By default the output is limited to the **selected** screenshots — a representative subset with one screenshot per unique structural DOM change. Rows are returned in **priority order** (most representative / most significant first; added/removed screenshots last) — inspect them in that order.
+The output covers **visual differences only** — matching screenshots, known flakes, and screenshots downstream of a divergence are not included. By default it is further limited to the **selected** screenshots — a representative subset with one screenshot per unique structural DOM change. Rows are returned in **priority order** (most representative / most significant first) — inspect them in that order.
 
 stdout columns:
 
 ```
-replayDiffId	screenshotName	outcome	mismatch
+replayDiffId	screenshotName	index	outcome	mismatchFraction
 ```
+
+`index` is the row's global rank (the priority order above); with `--orderByReplayDiffs` it instead ranks rows grouped by replay diff.
 
 Example output:
 
 ```
-CqctwLpPC7	after-event-0	diff	0.00234
-RRMGQft7PD	after-event-174	diff	0.01050
-CLkCJ8WLrJ	after-event-8	diff	0.00100
-Ct8HwmJNzM	end-state	flake	0.00010
-Ab3xKLmN9Q	after-event-12	missing-base	0.00000
+CqctwLpPC7	after-event-0	1	diff	0.00234
+RRMGQft7PD	after-event-174	2	diff	0.01050
+CLkCJ8WLrJ	after-event-8	4	diff	0.00100
 ```
 
-Each row represents a screenshot compared between the base (before) and head (after) replay. Rows are in priority order (most representative first, added/removed screenshots last). Rows with `outcome=diff` are confirmed visual differences; other outcomes (`flake`, `different-size`, `missing-base`, `missing-head`) are informational.
+Each row represents a screenshot compared between the base (before) and head (after) replay, and is a confirmed **visual difference** — every row has `outcome=diff`. Rows are in priority order.
 
-- `outcome`:
-  - `diff` — visual pixel difference between base and head.
-  - `no-diff` — no difference (only shown with `--includeAllDiffs`).
-  - `flake` — result varied across retries.
-  - `different-size` — base and head screenshots differ in dimensions (can't pixel-compare; a DOM diff is still computed).
-  - `missing-base` — screenshot present only in head (newly added); always included.
-  - `missing-head` — screenshot present only in base (removed); always included.
-- `mismatch` (0-1, 5 decimal places) is the **pixel mismatch fraction** — the fraction of pixels that differ between the base and head screenshots (`0` = identical, higher = more of the image changed). A large `mismatch` is a quick hint that a change is substantial, but always inspect the diff image regardless, since even a tiny fraction can be a meaningful change.
+- `outcome` is always `diff` — a visual pixel difference between base and head. Non-difference screenshots (matches, added/removed screenshots, screenshots downstream of a divergence) are not part of this summary; to look at one, pass its `screenshotName` to `agent image-files` / `agent dom-diff` (Steps 2-3), discovering the available names via `agent timeline-diff`.
+- `mismatchFraction` (0-1, 5 decimal places) is the **pixel mismatch fraction** — the fraction of pixels that differ between the base and head screenshots (`0` = identical, higher = more of the image changed). A large `mismatchFraction` is a quick hint that a change is substantial, but always inspect the diff image regardless, since even a tiny fraction can be a meaningful change.
 
 stderr shows: total counts, unique diff counts, and timing breakdown. Every returned row must be accounted for in the review — inspect each (Steps 2-3), and confirm it's intended or explained, before concluding the PR is good.
 
 **Optional flags** (to widen the output beyond the default selected subset):
 
-- `--includeDomDiffIds` — add a `domDiffIds` column: a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. Special values: `none` means no DOM changes were found (the visual difference is purely pixel-level, e.g. anti-aliasing — inspect the screenshot images to understand it); `n/a` means the DOM diff is not applicable (e.g. `missing-base` / `missing-head`, where only one side exists); `error` means the DOM diff was attempted but failed (e.g. metadata unavailable). Combine with `--includeAllDiffs` to see how the selected subset covers the full set of unique diff IDs.
-- `--includeAllDiffs` — return every diff rather than just the selected representative subset. Adds an `isSelected` column (`true`/`false`) marking which rows are in the selected subset.
-- `--orderByReplayDiffs` — order rows by replay diff then event order (so each session's screenshots read as a flow) instead of by importance. `index` then becomes the screenshot's position within its replay diff and a `total` column (screenshots in that replay diff) is added.
+- `--includeDomDiffIds` — add a `domDiffIds` column: a semicolon-separated ordered list of diff IDs, one per independent DOM change in the screenshot. Each ID groups structurally identical DOM changes across screenshots (same ID = same structural change). Example: `1;3` means two independent DOM changes with IDs 1 and 3. Special values: `none` means no DOM changes were found (the visual difference is purely pixel-level, e.g. anti-aliasing — inspect the screenshot images to understand it); `error` means the DOM diff was attempted but failed (e.g. metadata unavailable). Combine with `--includeAllDiffs` to see how the selected subset covers the full set of unique diff IDs.
+- `--includeAllDiffs` — return every difference rather than just the selected representative subset. Adds an `isSelected` column (`true`/`false`) marking which rows are in the selected subset.
+- `--orderByReplayDiffs` — order rows grouped by replay diff (each session's screenshots read as a flow) instead of by global priority; `index` then ranks rows within that grouping. The output stays a flat row list (one row per screenshot) in both TSV and `--json` — this only changes the ordering and the `index` values.
 
 ### Step 2 -- Get screenshot images
 
@@ -78,14 +76,15 @@ meticulous agent image-files --replayDiffId <replayDiffId> --screenshotName <scr
 
 This downloads the screenshot images to `~/.meticulous/agent-images/` and prints the local file paths.
 
+_MCP tool: `get_image_urls` returns the same outcome and signed image URLs, fetch the URLs to view the images._
+
 **Output format:**
 
 ```
-outcome: <outcome>
-screenshot: <path>          # present for missing-base/missing-head
-before: <path>              # present for diff/no-diff
-after: <path>
-diffImage: <path>
+outcome:	<outcome>
+before:	<path>              # the base image; omitted when outcome is missing-base
+after:	<path>               # the head image; omitted when outcome is missing-head
+diffImage:	<path>           # present only for a diff outcome
 ```
 
 Open the `before`, `after`, and `diffImage` files to visually inspect the change. The `diffImage` is usually the most informative — it highlights exactly which pixels changed. Always inspect the images to understand the actual visual impact of a change, even when the DOM diff is clear.
@@ -97,6 +96,8 @@ Alternative: use `image-urls` instead of `image-files` to get URLs to the images
 ```
 meticulous agent dom-diff --replayDiffId <replayDiffId> --screenshotName <screenshotName>
 ```
+
+_MCP tool: `get_dom_diff`._
 
 Optional: pass `--context <N|full>` to control how many context lines surround each hunk (default 3). Use `--context 0` for no context, or `--context full` for a single unified diff with full file context.
 
@@ -112,8 +113,6 @@ Optional: pass `--context <N|full>` to control how many context lines surround e
 +<a href="/projects/Foo/Bar/test-runs/abc123"><span class="inline-flex items-center rounded-lg bg-zinc-800">Original: abc123</span></a>
 ```
 
-To view a single diff block, add `--index <0-based index>` (maps to the 0-based position among the screenshot's DOM diff blocks — the same order as its `domDiffIds`, available via `--includeDomDiffIds` in Step 1).
-
 ### Step 4 -- Get the replay timeline (optional, for diagnosing unexpected diffs)
 
 If a diff is unexpected and the images/DOM don't make it obvious why it happened:
@@ -122,7 +121,9 @@ If a diff is unexpected and the images/DOM don't make it obvious why it happened
 meticulous agent timeline-diff --replayDiffId <replayDiffId>
 ```
 
-**Output format:** TSV on stdout, replay IDs on stderr.
+_MCP tool: `get_timeline_diff`._
+
+**Output format:** TSV on stdout.
 
 stdout columns:
 

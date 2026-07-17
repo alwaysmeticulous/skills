@@ -22,6 +22,7 @@ The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill i
 
 | Command | Purpose |
 |---------|---------|
+| `agent` | Read, analyse, and trigger test runs — the agent-facing commands, also exposed on the MCP server |
 | `auth` | Authenticate with Meticulous (whoami, logout) |
 | `debug` | Set up AI-ready debug workspaces for investigating replay diffs and replays |
 | `download` | Download sessions, replays, and test runs locally |
@@ -31,6 +32,7 @@ The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill i
 | `schema` | Output the CLI command schema as JSON (for agent/programmatic use) |
 
 See the reference for each group for full option details:
+- [references/agent.md](references/agent.md)
 - [references/auth.md](references/auth.md)
 - [references/debug.md](references/debug.md)
 - [references/download.md](references/download.md)
@@ -47,14 +49,19 @@ These options are accepted by every command:
 |--------|------|---------|-------------|
 | `--logLevel` | string | `info` | Log verbosity: `trace`, `debug`, `info`, `warn`, `error`, `silent` |
 | `--dataDir` | string | `~/.meticulous` | Directory where sessions, replays, and other data are stored |
-| `--rawJson` | string | — | Pass all options as a JSON string (useful for programmatic/agent invocation) |
-| `--dryRun` | boolean | `false` | Print what the command would do without making any changes |
+| `--jsonArgs` | string | — | Pass all options as a JSON string (useful for programmatic/agent invocation) |
+
+`--rawJson` is a deprecated alias for `--jsonArgs`. `--dryRun` is **not** global — it is available only on the commands that perform actions (e.g. the `ci` / `agent` run-triggering and upload commands, and `simulate`); check the command's reference or `meticulous schema <command>`.
 
 ## Authentication
 
 Commands authenticate via OAuth. The login token is stored on disk and reused across sessions — if you're not logged in, an interactive command opens a browser sign-in automatically (or run `meticulous auth whoami` to trigger it). See [references/auth.md](references/auth.md).
 
 An API token (via `--apiToken` or the `METICULOUS_API_TOKEN` environment variable, scoped to a specific organization/project) is also supported, and is the way to authenticate in non-interactive contexts such as CI.
+
+## MCP server
+
+The read/analysis `agent` commands are also exposed as tools on a hosted **MCP server** at `https://app.meticulous.ai/api/mcp`, so an MCP-enabled client (Claude Code, Cursor, Codex) can call them directly rather than shelling out to the CLI. Each `agent <command>` maps to a `get_<command>` tool that returns the same data as the CLI command's `--json` output — for example `agent test-run-diffs` ⇄ `get_test_run_diffs`, `agent dom-diff` ⇄ `get_dom_diff`, and `download session` ⇄ `get_session_data`. See [references/agent.md](references/agent.md) for the full command→tool mapping. Connect with just the endpoint URL (browser OAuth on first use). The skills are written in terms of the CLI; substitute the matching tool where noted if you have the MCP server connected.
 
 ## Example
 

@@ -31,7 +31,7 @@ Organizations:
 ## auth logout
 
 ```bash
-meticulous auth logout [--dryRun]
+meticulous auth logout
 ```
 
 **Purpose:** Clear all stored OAuth tokens from disk, effectively logging out.
@@ -40,15 +40,8 @@ meticulous auth logout [--dryRun]
 - Deletes the cached OAuth token file used by the CLI
 - Subsequent commands that require authentication will prompt for login again
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--dryRun` | boolean | `false` | Print what would be cleared without actually deleting tokens |
-
 **Example:**
 ```bash
 meticulous auth logout
 # Logged out successfully.
-
-meticulous auth logout --dryRun
-# Dry run: would clear stored OAuth tokens
 ```

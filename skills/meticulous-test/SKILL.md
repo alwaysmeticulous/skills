@@ -42,10 +42,10 @@ Trigger a run for the deployment, comparing against a base. Run it from the repo
 meticulous agent trigger-test-run --deploymentId <deploymentId>
 ```
 
-- A base is **required**. It's auto-inferred from the current directory; pass `--repoDirectory <path-to-repo>` if running from elsewhere, or `--baseSha <sha>` (and optionally `--gitDiffOutput`) to set it explicitly.
+- A base is **required**. It's auto-inferred from the current directory, or pass `--baseSha <sha>` (and optionally `--gitDiffOutput`) to set it explicitly.
 - Omit `--deploymentId` to use the most recent deployment already uploaded for the local HEAD commit instead — this requires a clean working tree (no uncommitted changes).
 - The command **blocks until the run finishes** by default and prints the `testRunId` to stdout; the final status is `Failure` when visual differences were detected (a normal completed verdict, not an error). Pass `--dontWaitForTestRunToComplete` to return as soon as the run is triggered.
-- **One build, many bases:** the same `deploymentId` can be re-triggered against different bases — just run `agent trigger-test-run` again with a different `--baseSha` / `--repoDirectory`. No rebuild or re-upload needed.
+- **One build, many bases:** the same `deploymentId` can be re-triggered against different bases — just run `agent trigger-test-run` again with a different `--baseSha`. No rebuild or re-upload needed.
 
 Note the `testRunId` from the output.
 

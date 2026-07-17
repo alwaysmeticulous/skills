@@ -6,95 +6,24 @@ These skills enable AI coding assistants (Cursor, Claude Code, etc.) to use Meti
 
 ## Setup
 
-### 1. Install/update the Meticulous CLI
+Full setup instructions live in the Meticulous docs: **[app.meticulous.ai/docs/agents/setup](https://app.meticulous.ai/docs/agents/setup)**. They cover installing the CLI, authenticating, installing these skills, and the agent permission allowlists for Claude Code, Codex, and Cursor.
 
-The [Meticulous CLI](https://github.com/alwaysmeticulous/meticulous-sdk) is required to run simulations and test runs from the command line:
+The short version:
 
 ```bash
+# 1. Install/update the Meticulous CLI
 npm install --global @alwaysmeticulous/cli@latest
-```
 
-You can also install it locally per-project instead of globally.
+# 2. Authenticate (opens a browser to sign in and pick a default project)
+meticulous auth login
 
-The CLI is under active development with frequent changes and improvements — re-run the same command to update to the latest version. The skills in this repo also invoke the [`meticulous-cli-update`](skills/meticulous-cli-update/SKILL.md) skill at the start of every workflow to keep this in sync automatically.
-
-### 2. Authentication
-
-Authenticate the CLI with your Meticulous account:
-
-```bash
-meticulous auth whoami
-```
-
-This will open a browser to sign in if you're not already authenticated. If you're a member of multiple projects, also run `meticulous auth set-project` to pick which one to use (it's an interactive prompt).
-
-Alternatively, use an API token (see [the docs](https://app.meticulous.ai/docs/agents/setup#2-authentication) for how to grab one) — either via the `METICULOUS_API_TOKEN` environment variable, or by storing `{"apiToken": "xyz..."}` in `~/.meticulous/config.json`.
-
-### 3. Install skills
-
-#### Multi-agent install (`npx skills`)
-
-Install skills into your project using [`npx skills`](https://github.com/vercel-labs/skills) — works for Claude Code, Codex, Cursor, and other supported agents:
-
-```bash
-# Claude Code only: create .claude/ first if it doesn't already exist
-mkdir -p .claude
-
-# Install all skills for the specified agents
+# 3. Install these skills into your project
 npx skills add alwaysmeticulous/skills --all --agents claude-code,codex,cursor
-
-# Update already-installed skills to the latest version
-npx skills update --project
 ```
 
-#### Cursor Marketplace
+### Cursor Marketplace
 
 This repository is also packaged as a [Cursor plugin](https://cursor.com/docs/plugins). Once listed in the Cursor Marketplace, Cursor users can install Meticulous skills from **Customize → Plugins** (or search the marketplace) without using `npx skills`. The `npx skills` flow above remains the recommended path when you need the same skills across multiple agents.
-
-### 4. Agent permissions
-
-The Meticulous skills run a small set of CLI commands and read downloaded screenshots from `~/.meticulous/agent-images/`. Pre-allowing these in your agent configuration avoids repeated permission prompts during a session.
-
-#### 4.1 Claude Code
-
-Add the following to `.claude/settings.json` (project-level) or `~/.claude/settings.json` (user-level). Replace `/HOME/DIR` with your home directory path (e.g. `/Users/alice`).
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Read(~/.meticulous/agent-images/**)",
-      "Bash(meticulous *)",
-      "Skill(meticulous-cli-update)",
-      "Bash(npm view @alwaysmeticulous/cli version)",
-      "Bash(npm install --global @alwaysmeticulous/cli@latest)",
-      "Bash(npx skills update --project)"
-    ]
-  }
-}
-```
-
-#### 4.2 Codex
-
-Add the following to `~/.codex/rules/default.rules`:
-
-```starlark
-prefix_rule(pattern=["meticulous"], decision="allow")
-prefix_rule(pattern=["npm", "view", "@alwaysmeticulous/cli", "version"], decision="allow")
-prefix_rule(pattern=["npm", "install", "--global", "@alwaysmeticulous/cli@latest"], decision="allow")
-prefix_rule(pattern=["npx", "skills", "update", "--project"], decision="allow")
-```
-
-#### 4.3 Cursor
-
-Add the following entries to Cursor's Command Allowlist:
-
-```bash
-meticulous
-npm view @alwaysmeticulous/cli version
-npm install --global @alwaysmeticulous/cli@latest
-npx skills update --project
-```
 
 ## Skills
 

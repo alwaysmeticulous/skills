@@ -40,7 +40,7 @@ If you have already committed previous steps and want to find sessions relevant 
 meticulous local relevant-sessions --startingPointSha=<sha-of-last-commit>
 ```
 
-For full option reference see the `meticulous-cli-local` skill. The key fields to extract from each session in the output:
+For full option reference see the `meticulous-cli` skill's [`local` reference](../meticulous-cli/references/local.md). The key fields to extract from each session in the output:
 
 - **Session ID** — pass as `--sessionId` when simulating
 - **Base replay ID** — the replay of this session on the base branch; pass as `--baseReplayId` to diff against. May be absent if the session has never been replayed on the base branch.
