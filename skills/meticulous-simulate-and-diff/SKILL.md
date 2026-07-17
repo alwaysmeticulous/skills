@@ -6,7 +6,7 @@ user-invocable: true
 
 # Simulate a session and analyze diffs
 
-This skill covers running a single simulation and interpreting the results. For the `simulate` command's full option reference see the `meticulous-cli-simulate` skill.
+This skill covers running a single simulation and interpreting the results. For the `simulate` command's full option reference see the `meticulous-cli` skill's [`simulate` reference](../meticulous-cli/references/simulate.md).
 
 > Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
 

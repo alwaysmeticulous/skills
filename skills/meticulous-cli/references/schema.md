@@ -62,4 +62,4 @@ The `schema` command is the recommended way for an agent to discover what comman
 1. Run `meticulous schema` to get the command tree.
 2. Run `meticulous schema <command>` to get the full option list for the target command.
 3. Construct the command with the required options.
-4. Optionally add `--dryRun` to verify the constructed invocation before executing it.
+4. On commands that support it (e.g. run-triggering / upload commands), optionally add `--dryRun` to verify the constructed invocation before executing it.

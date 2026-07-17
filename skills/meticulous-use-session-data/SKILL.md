@@ -99,3 +99,5 @@ meticulous download session --sessionId=<id> --format=multi-file
 ```
 
 This writes to `.meticulous/sessions/` by default. Use `--outputDir` to change the output location.
+
+_MCP tool: `get_session_data` returns the same structured session data inline (rather than writing it to disk), for a client connected to the [Meticulous MCP server](https://app.meticulous.ai/api/mcp)._
