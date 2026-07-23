@@ -21,6 +21,17 @@ meticulous auth login
 npx skills add alwaysmeticulous/skills --all --agents claude-code,codex,cursor
 ```
 
+### Claude Code plugin
+
+This repository is also packaged as a [Claude Code plugin](https://code.claude.com/docs/en/discover-plugins), which installs all the skills below (namespaced as `/meticulous:<skill-name>`) and automatically connects the hosted [Meticulous MCP server](https://app.meticulous.ai/api/mcp). To install, run in Claude Code:
+
+```shell
+/plugin marketplace add alwaysmeticulous/skills
+/plugin install meticulous@meticulous
+```
+
+Then type `/mcp` and choose **Authenticate** for the Meticulous MCP server (login happens in your browser; not needed if you already authenticate via `meticulous auth login` for the CLI).
+
 ### Cursor Marketplace
 
 This repository is also packaged as a [Cursor plugin](https://cursor.com/docs/plugins). Once listed in the Cursor Marketplace, Cursor users can install Meticulous skills from **Customize → Plugins** (or search the marketplace) without using `npx skills`. The `npx skills` flow above remains the recommended path when you need the same skills across multiple agents.
