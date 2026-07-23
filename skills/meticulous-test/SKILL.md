@@ -34,6 +34,8 @@ meticulous agent upload-build --localImageTag <image-tag>
 - Untracked files are rejected (they can't be captured) — `git add` them first.
 - Capture the `deploymentId` from stdout (pass `--verbose` to also see progress on stderr).
 
+_MCP alternative: there's no 1:1 `upload-build` tool — instead call `request_asset_upload` (or `request_container_upload` for a container), PUT the zip / push the image yourself, then `register_asset_build` / `register_container_build` with the returned `uploadId` to get `deploymentId`. Unlike the CLI, MCP never infers `commitSha` — pass it explicitly (`git stash create` gives a commit SHA for a dirty tree without touching HEAD, but still excludes untracked files)._
+
 ## Step 3 -- Trigger a test run
 
 Trigger a run for the deployment, comparing against a base. Run it from the repo directory to infer both the base (merge-base with the origin default branch) and the git diff automatically:
@@ -48,6 +50,8 @@ meticulous agent trigger-test-run --deploymentId <deploymentId>
 - **One build, many bases:** the same `deploymentId` can be re-triggered against different bases — just run `agent trigger-test-run` again with a different `--baseSha`. No rebuild or re-upload needed.
 
 Note the `testRunId` from the output.
+
+_MCP alternative: `trigger_test_run`, passing the `deploymentId` from Step 2. Two differences from the CLI: it **never infers `baseSha`/`gitDiffOutput`** — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly — and it **always returns immediately** without waiting for the run to finish, regardless of `--dontWaitForTestRunToComplete`; poll `get_test_run_diffs_counts` or `get_test_run_diffs` to know when it's done._
 
 ## Step 4 -- Review the visual changes
 

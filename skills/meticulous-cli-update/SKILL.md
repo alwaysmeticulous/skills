@@ -70,15 +70,25 @@ Verify the user is authenticated with Meticulous and has a project selected:
 meticulous auth whoami
 ```
 
-**If it reports "No authentication found"**, sign-in is needed. Sign-in is browser SSO, so a human always has to complete it in a browser; your job is to start the flow and hand them the URL:
+**If it reports "No authentication found"**, sign-in is needed. Sign-in is browser SSO, so a human always has to complete it in a browser; which login command to use depends on where you're running:
 
-```bash
-meticulous auth login --non-interactive
-```
+- **On the user's own machine** (a browser there can reach this machine's localhost):
 
-This prints a login URL and then waits on a local callback server, so run it in the background, then surface the printed URL to the user and ask them to open it and complete sign-in. Once they do, the command finishes and stores the token, and you can continue.
+  ```bash
+  meticulous auth login --non-interactive
+  ```
 
-Alternatively, ask the user to run `meticulous auth login` themselves — at their own terminal that opens the browser directly.
+  This prints a login URL and then waits on a local callback server, so run it in the background, then surface the printed URL to the user and ask them to open it and complete sign-in. Once they do, the command finishes and stores the token, and you can continue.
+
+  Alternatively, ask the user to run `meticulous auth login` themselves — at their own terminal that opens the browser directly.
+
+- **On a remote or sandboxed machine** (cloud agent, SSH session, container) where a browser on another device can't reach this machine's localhost:
+
+  ```bash
+  meticulous auth login --device
+  ```
+
+  This uses the OAuth device flow: it prints a URL and a short code instead of waiting on a local callback. Run it in the background, then surface the URL and code to the user and ask them to open the URL on any device and enter the code. Once confirmed, the command finishes and stores the token.
 
 **If it reports "No project selected"** (this happens when the user belongs to multiple projects — including right after a non-interactive login, which skips the project picker), a project must be chosen before project-scoped commands work. Ask the user which organization/project to use (if you don't already know), then pin it non-interactively:
 
