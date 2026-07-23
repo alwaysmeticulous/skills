@@ -1,0 +1,14 @@
+{
+  "name": "meticulous",
+  "displayName": "Meticulous",
+  "version": "1.0.0",
+  "description": "Agent skills for Meticulous visual regression testing — review test runs, investigate replays, debug diffs. Also connects the hosted Meticulous MCP server.",
+  "author": {
+    "name": "Meticulous",
+    "email": "support@meticulous.ai"
+  },
+  "homepage": "https://github.com/alwaysmeticulous/skills",
+  "repository": "https://github.com/alwaysmeticulous/skills",
+  "license": "ISC",
+  "keywords": ["meticulous", "visual-regression", "testing", "skills", "mcp"]
+}
