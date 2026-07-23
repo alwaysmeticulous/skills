@@ -23,7 +23,7 @@ The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill i
 | Command | Purpose |
 |---------|---------|
 | `agent` | Read, analyse, and trigger test runs — the agent-facing commands, also exposed on the MCP server |
-| `auth` | Authenticate with Meticulous (whoami, logout) |
+| `auth` | Authenticate with Meticulous (login, whoami, logout, project selection) |
 | `debug` | Set up AI-ready debug workspaces for investigating replay diffs and replays |
 | `download` | Download sessions, replays, and test runs locally |
 | `local` | Find sessions relevant to the current branch's code changes |
@@ -61,7 +61,7 @@ An API token (via `--apiToken` or the `METICULOUS_API_TOKEN` environment variabl
 
 ## MCP server
 
-The read/analysis `agent` commands are also exposed as tools on a hosted **MCP server** at `https://app.meticulous.ai/api/mcp`, so an MCP-enabled client (Claude Code, Cursor, Codex) can call them directly rather than shelling out to the CLI. Each `agent <command>` maps to a `get_<command>` tool that returns the same data as the CLI command's `--json` output — for example `agent test-run-diffs` ⇄ `get_test_run_diffs`, `agent dom-diff` ⇄ `get_dom_diff`, and `download session` ⇄ `get_session_data`. See [references/agent.md](references/agent.md) for the full command→tool mapping. Connect with just the endpoint URL (browser OAuth on first use). The skills are written in terms of the CLI; substitute the matching tool where noted if you have the MCP server connected.
+The `agent` commands are also exposed as tools on a hosted **MCP server** at `https://app.meticulous.ai/api/mcp`, so an MCP-enabled client (Claude Code, Cursor, Codex) can call them directly rather than shelling out to the CLI. Most read/analysis commands map to a `get_<command>` tool that returns the same data as the CLI command's `--json` output — for example `agent test-run-diffs` ⇄ `get_test_run_diffs`, `agent dom-diff` ⇄ `get_dom_diff`, and `download session` ⇄ `get_session_data`. The two mutating commands (`upload-build`, `trigger-test-run`) also have MCP tools, but not 1:1 — see [references/agent.md](references/agent.md) for the full mapping, including that important difference. Connect with just the endpoint URL (browser OAuth on first use). The skills are written in terms of the CLI; substitute the matching tool where noted if you have the MCP server connected — but note MCP tools never infer git context (`commitSha`/`baseSha`/diff), unlike the CLI, so always pass those explicitly when using MCP.
 
 ## Example
 

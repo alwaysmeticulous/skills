@@ -26,6 +26,7 @@ This will:
 |--------|------|---------|-------------|
 | `--format` | `multi-file` | — | Set to `multi-file` to download each relevant session's data as a structured directory tree |
 | `--minimum-times-to-cover-each-line` | number | — | Select at least this many sessions to cover each edited line, choosing the most diverse subset when more candidates are available |
+| `--include-superfluous-sessions` | boolean | `false` | Also include sessions that do test some changes but were superfluous given `--minimum-times-to-cover-each-line` |
 | `--outputDir` | string | `.meticulous/sessions` | Output directory for multi-file format |
 | `--showMaybeRelevant` | boolean | `false` | Also show sessions that may be affected |
 | `--startingPointSha` | string | — | Only consider changes since this commit SHA |

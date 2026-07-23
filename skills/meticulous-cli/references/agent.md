@@ -2,7 +2,9 @@
 
 Read, analysis, and run-triggering commands designed for AI coding agents. They resolve git context (commit SHA, base, diff) automatically from the local repository, and default to machine-readable output.
 
-The read/analysis commands are also exposed as tools on the hosted **MCP server** (`https://app.meticulous.ai/api/mcp`) — an MCP-enabled client can call the `get_…` tool directly instead of shelling out. Each tool takes broadly the same arguments and returns the same data as the CLI command's `--json` output, with minor differences inherent to a hosted endpoint (no git-inferred `commitSha`, no output-format flags, and — for `image-files` — URLs rather than files on disk). The **MCP tool** column below gives the mapping; write commands (`upload-build`, `trigger-test-run`) have no MCP equivalent.
+All commands are also exposed as tools on the hosted **MCP server** (`https://app.meticulous.ai/api/mcp`) — an MCP-enabled client can call the `get_…` tool directly instead of shelling out. Each read tool takes broadly the same arguments and returns the same data as the CLI command's `--json` output, with differences inherent to a hosted endpoint with no access to your local repo or filesystem: **`commitSha`/`baseSha`/`gitDiffOutput` are never inferred — always compute and pass them explicitly** (e.g. `git rev-parse HEAD`, `git merge-base origin/main HEAD`), there are no output-format flags, and — for `image-files` — you get signed URLs rather than files downloaded to disk. The **MCP tool** column below gives the mapping.
+
+`upload-build`/`trigger-test-run` (the mutating commands) map to MCP tools too, but not 1:1 — the CLI's single `agent upload-build` call is split into a **request → (upload) → register** pair on MCP (`request_asset_upload`/`request_container_upload` then `register_asset_build`/`register_container_build`), and `trigger_test_run` **does not wait for the run to finish** (unlike the CLI, which blocks by default) — poll `get_test_run_diffs_counts` or `get_test_run_diffs` to follow it. See the [`meticulous-test`](../../meticulous-test/SKILL.md) skill for the CLI workflow; use `mcp-server.ts`/the in-app MCP docs for the exact MCP tool call sequence.
 
 ## Common options
 
@@ -28,10 +30,12 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `dom-diff` | DOM diff for a screenshot diff | `get_dom_diff` |
 | `timeline-diff` | Timeline event diffs for a replay diff | `get_timeline_diff` |
 | `js-coverage --testRunId` | Per-file JS coverage for a test run | `get_test_run_js_coverage` |
+| `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run | `get_project_js_coverage` |
 | `js-coverage --replayId` | Per-file JS coverage for a replay | `get_replay_js_coverage` |
 | `js-coverage-diff` | Per-file JS coverage diff for a replay diff | `get_replay_diff_js_coverage_diff` |
-| `upload-build` | Upload a build, register a deployment | *(none — write op)* |
-| `trigger-test-run` | Trigger a run against a deployment | *(none — write op)* |
+| `sessions` | List a project's recently recorded sessions | `get_sessions` |
+| `upload-build` | Upload a build, register a deployment | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
+| `trigger-test-run` | Trigger a run against a deployment | `trigger_test_run` (returns immediately — does not wait for completion) |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
 
@@ -124,14 +128,15 @@ meticulous agent timeline-diff --replayDiffId=<id>
 ## agent js-coverage
 
 ```bash
-meticulous agent js-coverage [--testRunId=<id> | --commitSha=<sha> | --replayId=<id>] [options]
+meticulous agent js-coverage [--testRunId=<id> | --commitSha=<sha> | --replayId=<id> | --latestForProject] [options]
 ```
 
-**Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, or a combined set of runs. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
+**Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, a combined set of runs, or a project's latest successful run. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
 
 | Option | Type | Description |
 |--------|------|-------------|
 | `--testRunId` / `--commitSha` | string | Coverage for a test run (defaults to the current git HEAD) |
+| `--latestForProject` | boolean | Coverage for the project's preferred latest successful test run (the same run the webapp's project coverage view uses); mutually exclusive with the other run-selector options |
 | `--replayId` | string | Coverage for a single replay |
 | `--screenshotName` | string | Restrict to a single screenshot of the replay |
 | `--headPlusTestRunIds` / `--testRunIds` | string | Comma-separated run IDs to union coverage across (same project + commit) |
@@ -139,8 +144,9 @@ meticulous agent js-coverage [--testRunId=<id> | --commitSha=<sha> | --replayId=
 | `--includeAllFiles` | boolean | Include files with no coverage too |
 | `--prDiffOnly` | boolean | Restrict to files changed in the PR (test-run queries only) |
 | `--includeExecutableRanges` / `--includeUncoveredRanges` / `--includeCoveragePercentage` | boolean | Add richer per-file coverage columns |
+| `--dontWaitForTestRunToComplete` | boolean | Report an in-progress run and exit immediately instead of waiting |
 
-**MCP tools:** `get_test_run_js_coverage` (with `--testRunId`); `get_replay_js_coverage` (with `--replayId`).
+**MCP tools:** `get_test_run_js_coverage` (with `--testRunId`); `get_project_js_coverage` (with `--latestForProject`); `get_replay_js_coverage` (with `--replayId`).
 
 ## agent js-coverage-diff
 
@@ -151,6 +157,28 @@ meticulous agent js-coverage-diff --replayDiffId=<id> [--screenshotName=<name>] 
 **Purpose:** Per-file JS coverage diff for a replay diff. Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`).
 
 **MCP tool:** `get_replay_diff_js_coverage_diff`.
+
+## agent sessions
+
+```bash
+meticulous agent sessions [options]
+```
+
+**Purpose:** List a project's most recently created sessions, newest first (default: 100). Useful for finding the ID of a session just recorded. Outputs a TSV table (`id`, `createdAt`, `recordedAt`, `recordedBy`, `status`, plus requested columns).
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--project` | string | default project | One-off override (id, `org/proj`, or `proj`) |
+| `--createdSince` / `--createdUntil` | string | — | ISO-8601 date/time bounds on creation time |
+| `--recordedSince` / `--recordedUntil` | string | — | ISO-8601 date/time bounds on recording time |
+| `--recordedBy` | string | — | Filter by the user who recorded the session |
+| `--excludeSyntheticSessions` | boolean | `false` | Drop synthetic sessions (also drops the `status` column) |
+| `--visitedUrlFilter` | string | — | Glob over visited URLs (only `*` is a wildcard), e.g. `*/checkout*` |
+| `--includeStartUrl` / `--includeAbandonedReason` | boolean | `false` | Add extra columns |
+| `--limit` | number | `100` | 1–1000 |
+| `--offset` | number | `0` | — |
+
+**MCP tool:** `get_sessions`.
 
 ---
 
@@ -173,7 +201,7 @@ meticulous agent upload-build --localImageTag=<tag>     # container image
 | `--commitSha` | string | Override the commit the build is registered against |
 | `--dryRun` | boolean | Print what would be uploaded without doing it |
 
-**MCP tool:** none (write operation).
+**MCP tool:** no 1:1 equivalent — MCP splits this into `request_asset_upload`/`request_container_upload` (get an upload URL or registry credentials) → upload the zip/image yourself → `register_asset_build`/`register_container_build` (verify the upload and return `deploymentId`). The `commitSha` is never inferred on MCP — always pass your local commit explicitly (e.g. `git stash create` for a dirty tree, since untracked files are still excluded).
 
 ## agent trigger-test-run
 
@@ -194,4 +222,4 @@ meticulous agent trigger-test-run [--deploymentId=<id>] [--baseSha=<sha>] [optio
 | `--dontWaitForTestRunToComplete` | boolean | `false` | Return as soon as the run is triggered |
 | `--dryRun` | boolean | `false` | Print what would be triggered without doing it |
 
-**MCP tool:** none (write operation).
+**MCP tool:** `trigger_test_run`, taking a `deploymentId` from `register_asset_build`/`register_container_build`. Unlike the CLI, it **returns immediately without waiting** for the run to finish (poll `get_test_run_diffs_counts`/`get_test_run_diffs`), and `baseSha`/`gitDiffOutput` are never inferred — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly.
