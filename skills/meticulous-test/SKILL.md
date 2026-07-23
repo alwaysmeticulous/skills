@@ -29,7 +29,7 @@ meticulous agent upload-build --appDirectory <path-to-build>
 meticulous agent upload-build --localImageTag <image-tag>
 ```
 
-_MCP tool: no 1:1 equivalent — call `request_asset_upload` (or `request_container_upload`), upload the zip/image yourself, then `register_asset_build` (or `register_container_build`) with the returned `uploadId` to get `deploymentId`; unlike the CLI, MCP never infers `commitSha`, so pass it explicitly._
+_MCP tool: no 1:1 equivalent — call `request_asset_upload` (or `request_container_upload`), upload the zip/image yourself, then `register_asset_build` (or `register_container_build`) with the returned `uploadId` to get `deploymentId`._
 
 - `--appDirectory` points to the build output directory (e.g. a `dist/` subfolder); `--localImageTag` is the local Docker image tag. The build mode is auto-detected.
 - The build's commit defaults to the local git HEAD. If the working tree is dirty, it is captured as an **ephemeral commit** (printed as `commitSha (local, ephemeral due to dirty working tree): …`) — see the uncommitted-changes note below.
@@ -44,7 +44,7 @@ Trigger a run for the deployment, comparing against a base. Run it from the repo
 meticulous agent trigger-test-run --deploymentId <deploymentId>
 ```
 
-_MCP tool: `trigger_test_run` (never infers `baseSha`/`gitDiffOutput` — pass them explicitly — and always returns immediately without waiting for the run to finish; poll `get_test_run_diffs_counts` or `get_test_run_diffs` to know when it's done)._
+_MCP tool: `trigger_test_run` (never infers `baseSha`/`gitDiffOutput` — pass them explicitly — and always returns immediately without waiting for the run to finish)._
 
 - A base is **required**. It's auto-inferred from the current directory, or pass `--baseSha <sha>` (and optionally `--gitDiffOutput`) to set it explicitly.
 - Omit `--deploymentId` to use the most recent deployment already uploaded for the local HEAD commit instead — this requires a clean working tree (no uncommitted changes).
