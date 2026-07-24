@@ -162,3 +162,13 @@ After investigating all diffs and attempting fixes for any fixable issues, produ
    - Whether it's a side effect of your code or unrelated, and your best assessment of the cause
 
 The PR is only good when **every** returned diff has been checked and accounted for — each one either confirmed intended or explained. If any diff remains unintended or unexplained, the PR is not yet good: fix it, or surface it clearly to the user.
+
+### Report feedback to Meticulous
+
+As the last step, after delivering the final report, submit one brief feedback note to the Meticulous team: did Meticulous catch a real problem, was anything confusing or misleading, and what information would have made the review easier?
+
+```bash
+meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --testRunId=<id> --skill=meticulous-review
+```
+
+_MCP tool: `submit_feedback`._

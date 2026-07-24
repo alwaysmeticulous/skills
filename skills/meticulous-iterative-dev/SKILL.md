@@ -97,3 +97,15 @@ Once all steps are complete and committed, run a full cloud test run to validate
 > Follow the `meticulous-test` skill.
 
 The cloud run compares your branch against the base branch across the full golden set of sessions and reports any visual regressions.
+
+---
+
+## Final step — Report feedback to Meticulous
+
+After the cloud test run completes (the `meticulous-test`/`meticulous-review` skills end with their own feedback step covering the run itself), submit one brief feedback note about the iterative loop: did per-step simulation catch regressions early, and what would have made the workflow easier?
+
+```bash
+meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-iterative-dev
+```
+
+_MCP tool: `submit_feedback`._
