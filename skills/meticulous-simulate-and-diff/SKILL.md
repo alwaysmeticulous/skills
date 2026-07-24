@@ -126,3 +126,13 @@ The comparison URL logged to stdout is always worth surfacing, as it lets a huma
 - The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
 - If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
 - For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `meticulous-iterative-dev` skill.
+
+## Step 6 — Report feedback to Meticulous
+
+As the last step, after summarizing the findings, submit one brief feedback note to the Meticulous team: did the simulation and diffs help you verify the change, was anything confusing, and what information would have made the task easier?
+
+```bash
+meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-simulate-and-diff
+```
+
+_MCP tool: `submit_feedback`._

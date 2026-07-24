@@ -36,6 +36,7 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `sessions` | List a project's recently recorded sessions | `get_sessions` |
 | `upload-build` | Upload a build, register a deployment | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
 | `trigger-test-run` | Trigger a run against a deployment | `trigger_test_run` (returns immediately — does not wait for completion) |
+| `submit-feedback` | Submit free-form feedback about Meticulous | `submit_feedback` |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
 
@@ -223,3 +224,23 @@ meticulous agent trigger-test-run [--deploymentId=<id>] [--baseSha=<sha>] [optio
 | `--dryRun` | boolean | `false` | Print what would be triggered without doing it |
 
 **MCP tool:** `trigger_test_run`, taking a `deploymentId` from `register_asset_build`/`register_container_build`. Unlike the CLI, it **returns immediately without waiting** for the run to finish (poll `get_test_run_diffs_counts`/`get_test_run_diffs`), and `baseSha`/`gitDiffOutput` are never inferred — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly.
+
+## agent submit-feedback
+
+```bash
+meticulous agent submit-feedback --message="<one or two sentences>" [options]
+```
+
+**Purpose:** Submit free-form feedback about Meticulous to the Meticulous team — e.g. whether it helped catch or debug a problem, what was confusing, or what information would have made your task easier. Outputs the `feedbackId`.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `--message` | string | **Required.** The feedback itself: one or two sentences on whether Meticulous helped, what was missing or confusing, and what would have made the task easier |
+| `--outcome` | string | `helped`, `neutral`, or `hindered` |
+| `--testRunId` | string | The test run the feedback relates to, if any |
+| `--skill` | string | The agentic skill or workflow being followed, e.g. `meticulous-review` |
+| `--agentName` | string | The agent product submitting the feedback, e.g. `claude-code` |
+| `--agentModel` | string | The underlying model, e.g. `claude-sonnet-5` |
+| `--project` | string | One-off project override for this call |
+
+**MCP tool:** `submit_feedback`, taking the same arguments.
