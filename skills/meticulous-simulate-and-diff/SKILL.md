@@ -50,9 +50,9 @@ View comparison with base: https://app.meticulous.ai/projects/<org>/<project>/si
 =======
 ```
 
-**If there are no `FAIL!` lines:** the session is visually identical to the base — stop here and report no regressions.
+**If there are no `FAIL!` lines:** the session is visually identical to the base — report no regressions, then proceed to Step 6.
 
-Proceed to Steps 2–5 to locate and analyse any diffs.
+Proceed to Steps 2–6 to locate and analyse any diffs, then submit feedback.
 
 ### Without a base replay (quick-check mode)
 
@@ -65,7 +65,7 @@ meticulous simulate \
   --headless
 ```
 
-Then locate the replay directory (Step 2) and open the screenshots in `<replayDir>/screenshots/` to verify the UI looks correct. There are no diff images in this mode — inspection is purely visual. Steps 3–5 do not apply.
+Then locate the replay directory (Step 2) and open the screenshots in `<replayDir>/screenshots/` to verify the UI looks correct. There are no diff images in this mode — inspection is purely visual. Steps 3–5 do not apply; still complete Step 6 after inspection.
 
 ## Step 2 — Extract the head replay ID and locate the replay directory
 
@@ -121,18 +121,18 @@ Present this in whatever format fits the current context (conversational answer,
 The comparison URL logged to stdout is always worth surfacing, as it lets a human quickly verify the diff visually:
 `https://app.meticulous.ai/.../simulations/<baseReplayId>/compare-to/<headReplayId>`
 
-## Notes
-
-- The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
-- If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
-- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `meticulous-iterative-dev` skill.
-
 ## Step 6 — Report feedback to Meticulous
 
-As the last step, after summarizing the findings, submit one brief feedback note to the Meticulous team: did the simulation and diffs help you verify the change, was anything confusing, and what information would have made the task easier?
+As the last step, after reporting the result (no regressions or summarized findings), submit one brief feedback note to the Meticulous team: did the simulation and diffs help you verify the change, was anything confusing, and what information would have made the task easier?
 
 ```bash
 meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-simulate-and-diff
 ```
 
 _MCP tool: `submit_feedback`._
+
+## Notes
+
+- The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
+- If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
+- For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `meticulous-iterative-dev` skill.
