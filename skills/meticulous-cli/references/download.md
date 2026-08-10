@@ -5,10 +5,14 @@ Commands for downloading Meticulous artifacts to the local `dataDir` (default `~
 ## download session
 
 ```bash
+# CLI
 meticulous download session --sessionId=<id> [--format=<format>] [--apiToken=<token>]
+
+# MCP (returns the same structured data inline instead of writing it to disk)
+get_session_data(sessionId="<id>")
 ```
 
-**Purpose:** Download a recorded session's data from Meticulous.
+**Purpose:** Download a recorded session's data from Meticulous. `download replay`/`download test-run` below have no MCP equivalent.
 
 **Options:**
 
@@ -23,7 +27,7 @@ meticulous download session --sessionId=<id> [--format=<format>] [--apiToken=<to
 - Session metadata JSON (recording info, timestamps, URL)
 - Session data file (the full event log used for replay)
 
-**Multi-file format** writes a structured directory tree. See the [`meticulous-use-session-data`](../../meticulous-use-session-data/SKILL.md) skill for details on the output structure.
+**Multi-file format** writes a structured directory tree. See the `meticulous-use-session-data` skill for details on the output structure.
 
 **Examples:**
 ```bash

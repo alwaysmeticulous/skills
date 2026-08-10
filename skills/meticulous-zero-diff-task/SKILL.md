@@ -1,0 +1,94 @@
+---
+name: meticulous-zero-diff-task
+description: Implement a task for which no visual diffs are expected end to end, using Meticulous to drive the implementation to a clean visual diff before opening a PR. Use when the task's whole premise is "the UI shouldn't change" — a dependency/version upgrade, a code refactor, a migration, or similar. Meticulous isn't just a final check here, it's the loop you iterate against while implementing.
+user-invocable: true
+---
+
+To grind out a no-diff (or low-diff) implementation task, follow the workflow below step by step, using the CLI or MCP commands as described.
+
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+
+This skill is for tasks whose success criterion is visual stability, not visual change: dependency/version upgrades, refactors, migrations (e.g. framework/library swaps, build-tool changes), and similar work where any Meticulous diff is a sign something broke, not a feature to explain away. It also works for low-diff tasks (a handful of expected, well-understood visual changes alongside mostly-unchanged output) — the loop is the same, just with a smaller set of diffs you expect to end up justifying rather than fixing.
+
+## Step 1 -- Implement the task
+
+Make the code change described by the task (the upgrade, refactor, or migration). Commit as you go if the task naturally breaks into steps — this isn't specific to Meticulous, just do the implementation work.
+
+## Step 2 -- Build the frontend
+
+1. Find out what build artefact Meticulous expects by checking `.github/workflows/` for one of the following steps:
+    - `uses: alwaysmeticulous/report-diffs-action/upload-assets@v1` — build assets
+    - `uses: alwaysmeticulous/report-diffs-action/upload-container@v1` — docker image
+2. Build the frontend following the same instructions as used in the GitHub workflow.
+
+## Step 3 -- Upload the build and trigger a test run
+
+```bash
+# CLI
+meticulous agent upload-build --appDirectory <path-to-build>     # assets
+meticulous agent upload-build --localImageTag <image-tag>        # container
+meticulous agent trigger-test-run --deploymentId <deploymentId>
+
+# MCP (upload is not 1:1 — request an upload URL, upload the artifact yourself, then register it)
+request_asset_upload()      # or request_container_upload()
+# ... upload the zip/image to the returned URL/registry yourself ...
+register_asset_build(uploadId="<id>")      # or register_container_build(uploadId="<id>")
+trigger_test_run(deploymentId="<deploymentId>", baseSha="<sha>")
+```
+
+`trigger_test_run` on MCP never infers `baseSha`/`gitDiffOutput` (compute the base locally) and always returns immediately without waiting for the run to finish (unlike the CLI, which blocks by default).
+
+Run `trigger-test-run` from the repo directory to infer both the base (merge-base with the origin default branch) and the git diff automatically. See the `meticulous-cli` reference for the full option list — in particular, the working tree can be dirty (captured as an ephemeral commit) so you don't need to commit before each iteration below.
+
+Note the `testRunId` from the output.
+
+## Step 4 -- Check for diffs, and iterate until clean
+
+Inspect the diffs using the mechanics from the `meticulous-review` skill (Steps 1-4 there: `agent test-run-diffs`, screenshot images, DOM diff, timeline) — but apply this decision rule instead of the `meticulous-review` skill's expected-vs-regression framework:
+
+**For a no-diff task, treat every returned diff as a bug until proven otherwise.** The premise of this skill is that the UI shouldn't change, so:
+
+1. **No diffs at all** — you're done with this step; proceed to Step 5.
+2. **One or more diffs** — for each one:
+   - Look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why.
+   - Use the timeline (the `meticulous-review` skill's Step 4) if the cause isn't obvious from the DOM/images alone — a version bump, a changed default, a reordered dependency, etc. often shows up there.
+   - **The default assumption is that this is a regression caused by your change** — fix the code so the behavior/output matches the pre-change baseline, then go back to Step 3 and re-run (new build, same base).
+   - Only treat a diff as acceptable if you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any.
+   - If a diff can't be fixed and can't be confidently justified either, don't get stuck looping — leave it, and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
+
+Repeat Steps 3-4 until either no diffs remain, or every remaining diff is justified or explicitly flagged as unresolved.
+
+## Step 5 -- Create the PR
+
+Once the run is clean (or every remaining diff is accounted for), commit any outstanding changes, push the branch, and open the PR.
+
+In the PR description:
+
+- Summarize the task and, briefly, the Meticulous result: e.g. "Verified via Meticulous: no visual differences across the golden set" or, if some diffs remain, a short list of what they are and why they're expected/unavoidable — link each one: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
+- **Author credit:** if the PR description already credits an AI coding assistant as (co-)author (e.g. "Created by Claude Code", "Co-authored-by: Cursor", "🤖 Generated with Claude Code"), add "and Meticulous" to that mention — e.g. "Created by Claude Code and Meticulous" — since Meticulous drove the implementation loop, not just a final check. Don't add a Meticulous author credit if no such line already exists; there's nothing to append it to.
+
+## Step 6 -- Confirm the PR's own test run matches
+
+Once CI has triggered its own Meticulous test run for the pushed commit, confirm it shows the same result you already validated locally — this catches drift between your local build and CI's build (e.g. a dependency lockfile mismatch, an env var only set in CI).
+
+```bash
+# CLI (resolves from local git HEAD — already the pushed commit)
+meticulous agent test-run-diffs
+
+# MCP (git context is never inferred — pass the local HEAD commit explicitly)
+get_test_run_diffs(commitSha="<sha>")
+```
+
+If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.
+
+## Step 7 -- Report feedback to Meticulous
+
+As the last step, submit one brief feedback note to the Meticulous team: did the iterate-to-clean loop work well for this kind of task, was anything confusing, and what would have made it easier?
+
+```bash
+# CLI
+meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --testRunId=<id> --skill=meticulous-zero-diff-task
+
+# MCP
+submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hindered>", testRunId="<id>", skill="meticulous-zero-diff-task")
+```

@@ -8,7 +8,7 @@ user-invocable: true
 
 Use this skill when implementing a multi-step frontend change. After each step, run a quick local visual check using Meticulous to catch regressions and unintended side effects early. After all steps are complete, run a full cloud test run to validate across all recorded sessions.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Prerequisites
 
@@ -94,7 +94,7 @@ Return to Step 1 for the next step.
 
 Once all steps are complete and committed, run a full cloud test run to validate across all recorded sessions (not just the 1–2 you simulated locally):
 
-> Follow the `meticulous-test` skill.
+> Follow the `meticulous-zero-diff-task` skill.
 
 The cloud run compares your branch against the base branch across the full golden set of sessions and reports any visual regressions.
 
@@ -102,10 +102,12 @@ The cloud run compares your branch against the base branch across the full golde
 
 ## Final step — Report feedback to Meticulous
 
-After the cloud test run completes (the `meticulous-test`/`meticulous-review` skills end with their own feedback step covering the run itself), submit one brief feedback note about the iterative loop: did per-step simulation catch regressions early, and what would have made the workflow easier?
+After the cloud test run completes (the `meticulous-zero-diff-task`/`meticulous-review` skills end with their own feedback step covering the run itself), submit one brief feedback note about the iterative loop: did per-step simulation catch regressions early, and what would have made the workflow easier?
 
 ```bash
+# CLI
 meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-iterative-dev
-```
 
-_MCP tool: `submit_feedback`._
+# MCP
+submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hindered>", skill="meticulous-iterative-dev")
+```

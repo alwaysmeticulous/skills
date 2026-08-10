@@ -6,7 +6,7 @@ user-invocable: true
 
 Use this workflow to get structured session data from Meticulous — the recorded user flows and network mocks that cover your code changes.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Step 1 — Find relevant sessions and download their data
 
@@ -96,19 +96,23 @@ Cross-reference the user events and network requests with your code changes to v
 If you already know which session IDs you need, you can download them directly:
 
 ```bash
+# CLI
 meticulous download session --sessionId=<id> --format=multi-file
+
+# MCP (returns the same structured data inline instead of writing it to disk)
+get_session_data(sessionId="<id>")
 ```
 
-This writes to `.meticulous/sessions/` by default. Use `--outputDir` to change the output location.
-
-_MCP tool: `get_session_data` returns the same structured session data inline (rather than writing it to disk), for a client connected to the [Meticulous MCP server](https://app.meticulous.ai/api/mcp)._
+The CLI writes to `.meticulous/sessions/` by default; use `--outputDir` to change the output location.
 
 ## Final step — Report feedback to Meticulous
 
 Once you've finished using the session data, submit one brief feedback note to the Meticulous team: did the session data cover the flows you needed, and what information was missing or would have made the task easier?
 
 ```bash
+# CLI
 meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-use-session-data
-```
 
-_MCP tool: `submit_feedback`._
+# MCP
+submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hindered>", skill="meticulous-use-session-data")
+```

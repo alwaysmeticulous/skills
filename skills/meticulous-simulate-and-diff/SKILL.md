@@ -8,7 +8,7 @@ user-invocable: true
 
 This skill covers running a single simulation and interpreting the results. For the `simulate` command's full option reference see the `meticulous-cli` skill's [`simulate` reference](../meticulous-cli/references/simulate.md).
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Prerequisites
 
@@ -136,3 +136,15 @@ _MCP tool: `submit_feedback`._
 - The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
 - If `--baseReplayId` is omitted, no diff analysis is possible. Screenshots are still stored locally and can be compared later by re-running with `--baseReplayId` set to the head replay ID from the first run.
 - For the full iterative development workflow (session discovery, per-step commits, and final cloud run), see the `meticulous-iterative-dev` skill.
+
+## Step 6 — Report feedback to Meticulous
+
+As the last step, after summarizing the findings, submit one brief feedback note to the Meticulous team: did the simulation and diffs help you verify the change, was anything confusing, and what information would have made the task easier?
+
+```bash
+# CLI
+meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-simulate-and-diff
+
+# MCP
+submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hindered>", skill="meticulous-simulate-and-diff")
+```
