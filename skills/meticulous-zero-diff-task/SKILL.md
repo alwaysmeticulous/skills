@@ -52,9 +52,10 @@ Inspect the diffs using the mechanics from the `meticulous-review` skill (Steps 
 2. **One or more diffs** — for each one:
    - Look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why.
    - Use the timeline (the `meticulous-review` skill's Step 4) if the cause isn't obvious from the DOM/images alone — a version bump, a changed default, a reordered dependency, etc. often shows up there.
-   - **The default assumption is that this is a regression caused by your change** — fix the code so the behavior/output matches the pre-change baseline, then go back to Step 3 and re-run (new build, same base).
-   - Only treat a diff as acceptable if you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any.
-   - If a diff can't be fixed and can't be confidently justified either, don't get stuck looping — leave it, and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
+   - **The default assumption is that this is a regression caused by your change.** Reject it now, using the `meticulous-review` skill's Step 6 mechanics (`agent reject-diff --reason="<why>"`) — this leaves a paper trail even though you're both reviewer and implementer here. Then fix the code so the behavior/output matches the pre-change baseline, and go back to Step 3 to rebuild and re-run (new build, same base).
+   - Once a later run confirms that diff no longer reproduces, close the loop on the rejection you filed: reply "Fixed" to its comment thread, using the `meticulous-fix` skill's Step 4 mechanics (`agent reply-to-diff-comment`, with the thread's root `id` from `agent diff-comments` for that `replayDiffId`/`screenshotName`).
+   - Only treat a diff as acceptable if you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't reject or ignore these yet — hold off until Step 6, where the verdict gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
+   - If a diff can't be fixed and can't be confidently justified either, don't get stuck looping — reject it anyway with a reason explaining what's blocking you, so the thread reflects reality; leave it unresolved, and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
 
 Repeat Steps 3-4 until either no diffs remain, or every remaining diff is justified or explicitly flagged as unresolved.
 
@@ -80,6 +81,18 @@ get_test_run_diffs(commitSha="<sha>")
 ```
 
 If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.
+
+For every diff that's still present here and that you justified rather than fixed (Step 4), leave your reasoning on the record via `ignore-diff` — this is the run CI and a human reviewer will actually see, so it's where that verdict needs to be filed:
+
+```bash
+# CLI
+meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why it's justified>" --x=<0..1> --y=<0..1>
+
+# MCP
+ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's justified>", x=<0..1>, y=<0..1>)
+```
+
+`ignore-diff` decides nothing — the diff stays `unreviewed` and the check stays pending — but it puts your reasoning on record so the human reviewing the PR doesn't have to re-derive it.
 
 ## Step 7 -- Report feedback to Meticulous
 
