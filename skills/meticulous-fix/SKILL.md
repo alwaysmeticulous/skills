@@ -22,6 +22,8 @@ get_test_run_diffs(onlyRejected=true, onlyWithComments=true, includeReviews=true
 
 **Important — these `--only*` flags are additive (OR'd):** passing both `--onlyRejected` and `--onlyWithComments` returns every diff that's rejected, has an open comment, or both — not just the intersection — since a comment on a diff that wasn't formally rejected may still contain an instruction worth acting on. `--includeAllDiffs` is implied, so this spans the full run rather than just the selected subset; `--includeReviews` adds `decision`/`openComments` columns so you can tell which case each row is.
 
+**Not every commented row is a fix target.** The `meticulous-review` skill's `ignore-diff` posts a flake/noise note and leaves the diff `unreviewed` — that comment is not a fix instruction. When reading Step 1's rows, skip diffs whose only open comments are ignore/flake notes; leave those threads alone.
+
 ## Step 2 -- Read the review comments for diffs that have any
 
 For each diff with `openComments > 0`:
@@ -58,9 +60,9 @@ See the `meticulous-review` skill's Steps 2-3 for output formats and the optiona
 
 ## Step 4 -- Fix the underlying code
 
-For each rejected diff, make the code change that resolves the comment's instructions (or, in the no-comment fallback, the regression you identified). A single code change may resolve multiple rejected diffs at once (e.g. one component bug causing several screenshot diffs) — don't fix the same root cause repeatedly.
+For each **fix target** — a rejected diff, or a non-rejected diff whose comments ask for a concrete fix — make the code change that resolves the comment's instructions (or, in the no-comment fallback, the regression you identified). Skip ignore/flake-only threads from Step 1; do not change code for them and do not reply on them. A single code change may resolve multiple fix-target diffs at once (e.g. one component bug causing several screenshot diffs) — don't fix the same root cause repeatedly.
 
-Close the loop on **every** diff from Step 1 — fixed or not — by replying to its comment thread (or creating one if it had none):
+Close the loop on **every fix-target** diff — fixed or not — by replying to its comment thread (or creating one if it had none):
 
 ```bash
 # CLI
@@ -77,7 +79,7 @@ Use `reply-to-diff-comment` when the diff already has a comment thread — pass 
 - **Fixed** — reply/comment "Fixed."
 - **Not fixable** (a comment asks for something that isn't actually possible — contradicts another requirement, describes behavior that doesn't exist, references something you can't find, etc.) — don't guess; explain why, so the reviewer sees it without having to ask you again.
 
-Either way, move on to the next diff; report it at the end (see the final report below).
+Either way, move on to the next fix-target diff; report it at the end (see the final report below).
 
 ## Step 5 -- Commit, push, and let CI confirm
 
@@ -108,7 +110,7 @@ If a diff you believed you fixed is still showing up (decisions/comments carry f
 
 ## Step 6 -- Final report
 
-Summarize the outcome, covering **every** diff from Step 1. Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
+Summarize the outcome, covering **every fix-target** diff from Step 1 (omit ignore/flake-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
 
 1. **Fixed**: which diffs were resolved, what the underlying code change was, and which comment(s) it addressed, if any.
 2. **Not fixed** (if any): which diffs couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. Note that you left this explanation as a reply/comment on the diff (Step 4) — don't just leave it in the report where only this conversation sees it. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.

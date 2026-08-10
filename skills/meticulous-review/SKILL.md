@@ -8,7 +8,7 @@ To review a Meticulous test run, follow the workflow below step by step, using t
 
 > Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
-This skill treats you as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Its job is to catch regressions, not to iterate on the implementation (if you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-zero-diff-task` skill; if diffs have already been reviewed and rejected and you're just here to fix what's flagged, see the `meticulous-fix` skill).
+This skill treats you as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Its job is to catch regressions, not to iterate on the implementation (if you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-iterative-dev` skill for feature work with intended visual changes, or the `meticulous-zero-diff-task` skill when the UI must not change; if diffs have already been reviewed and rejected and you're just here to fix what's flagged, see the `meticulous-fix` skill).
 
 ## Step 0 -- Establish what's expected
 
