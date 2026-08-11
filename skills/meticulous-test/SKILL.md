@@ -4,9 +4,9 @@ description: Run a Meticulous test run after implementing a frontend change, the
 user-invocable: true
 ---
 
-To test a frontend change using Meticulous, follow the workflow below step by step, using the CLI commands as described.
+To test a frontend change using Meticulous, follow the workflow below step by step, using the CLI or MCP commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI is up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 If you are already given a test run id, skip to Step 4.
 
@@ -21,15 +21,16 @@ If you are already given a test run id, skip to Step 4.
 
 Register the build as a reusable deployment with `agent upload-build`. This uploads the artefact and prints a `deploymentId` to stdout — it does **not** trigger a run yet.
 
-```
-# assets
-meticulous agent upload-build --appDirectory <path-to-build>
+```bash
+# CLI
+meticulous agent upload-build --appDirectory <path-to-build>     # assets
+meticulous agent upload-build --localImageTag <image-tag>        # container
 
-# container
-meticulous agent upload-build --localImageTag <image-tag>
+# MCP (not 1:1 — request an upload URL, upload the artifact yourself, then register it)
+request_asset_upload()      # or request_container_upload()
+# ... upload the zip/image to the returned URL/registry yourself ...
+register_asset_build(uploadId="<id>")      # or register_container_build(uploadId="<id>")
 ```
-
-_MCP tool: no 1:1 equivalent — call `request_asset_upload` (or `request_container_upload`), upload the zip/image yourself, then `register_asset_build` (or `register_container_build`) with the returned `uploadId` to get `deploymentId`._
 
 - `--appDirectory` points to the build output directory (e.g. a `dist/` subfolder); `--localImageTag` is the local Docker image tag. The build mode is auto-detected.
 - The build's commit defaults to the local git HEAD. If the working tree is dirty, it is captured as an **ephemeral commit** (printed as `commitSha (local, ephemeral due to dirty working tree): …`) — see the uncommitted-changes note below.
@@ -40,11 +41,13 @@ _MCP tool: no 1:1 equivalent — call `request_asset_upload` (or `request_contai
 
 Trigger a run for the deployment, comparing against a base. Run it from the repo directory to infer both the base (merge-base with the origin default branch) and the git diff automatically:
 
-```
+```bash
+# CLI
 meticulous agent trigger-test-run --deploymentId <deploymentId>
-```
 
-_MCP tool: `trigger_test_run` (never infers `baseSha`/`gitDiffOutput` — pass them explicitly — and always returns immediately without waiting for the run to finish)._
+# MCP (never infers `baseSha`/`gitDiffOutput` — pass them explicitly — and always returns immediately without waiting for the run to finish)
+trigger_test_run(deploymentId="<deploymentId>", baseSha="<sha>")
+```
 
 - A base is **required**. It's auto-inferred from the current directory, or pass `--baseSha <sha>` (and optionally `--gitDiffOutput`) to set it explicitly.
 - Omit `--deploymentId` to use the most recent deployment already uploaded for the local HEAD commit instead — this requires a clean working tree (no uncommitted changes).

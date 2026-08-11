@@ -19,7 +19,7 @@ meticulous local relevant-sessions [options]
 | `--startingPointSha` | string | — | Only consider changes since this commit SHA. The merge-base is still used to find the base test run, but the diff is computed from `startingPointSha` instead. Use in agentic loops to scope each iteration to only the latest changes. |
 | `--minimum-times-to-cover-each-line` (alias `--minimumTimesToCoverEachLine`) | number | — | Select at least this many sessions to cover each edited line, choosing the most diverse subset when more candidates are available |
 | `--include-superfluous-sessions` (alias `--includeSuperfluousSessions`) | boolean | `false` | Also include sessions that do test some of the changes but were superfluous given `--minimum-times-to-cover-each-line` — other sessions already cover the code sufficiently |
-| `--format` | `multi-file` | — | Set to `multi-file` to download each relevant session's data as a structured directory tree. See the [`meticulous-use-session-data`](../../meticulous-use-session-data/SKILL.md) skill for details on the output structure. |
+| `--format` | `multi-file` | — | Set to `multi-file` to download each relevant session's data as a structured directory tree. See the `meticulous-use-session-data` skill for details on the output structure. |
 | `--outputDir` | string | `.meticulous/sessions` | Output directory for multi-file format |
 
 **Exit behaviour:** Exits with code 1 if the project cannot be retrieved or the repository is not a git repo.

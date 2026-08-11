@@ -1,6 +1,6 @@
 ---
 name: meticulous-cli-update
-description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) is installed and up to date, and install/update it if not. Invoked at the start of every other Meticulous skill, since the CLI is under active development with frequent changes and improvements.
+description: Check whether the Meticulous CLI (@alwaysmeticulous/cli) and skills are installed and up to date, and install/update them if not. Invoked at the start of every other Meticulous skill, since the CLI and skills are under active development with frequent changes and improvements.
 user-invocable: false
 ---
 
@@ -9,6 +9,8 @@ user-invocable: false
 The `@alwaysmeticulous/cli` package is under active development and ships frequent changes and improvements. Other Meticulous skills assume the `meticulous` command is on `PATH` and up to date, so run this skill once at the start of any Meticulous workflow.
 
 This only needs to run **once per conversation**. If you've already run it earlier in this conversation, skip it — there's no need to re-check the version or re-update on every Meticulous skill invocation.
+
+**Using the MCP server instead of the CLI?** Steps 1-4 are about installing/updating the `meticulous` CLI binary and its own local auth — neither applies when calling tools on the hosted [Meticulous MCP server](https://app.meticulous.ai/api/mcp), which is already on the latest version and authenticates via the MCP connection itself, not `meticulous auth login`. Skip straight to **Step 5**: the installed **skills** (this document set) are a separate thing from the CLI/MCP tool itself and still need to stay current either way, regardless of which one you're calling tools through.
 
 ## How to handle the install/update commands
 
