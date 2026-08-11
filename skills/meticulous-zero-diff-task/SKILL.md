@@ -50,33 +50,13 @@ Inspect the diffs using the mechanics from the `meticulous-review` skill (Steps 
 
 1. **No diffs at all** — you're done with this step; proceed to Step 5.
 2. **One or more diffs** — for each one, look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why, using the timeline (Step 4 there) if the cause isn't obvious from the DOM/images alone. Then classify it:
-   - **Regression (the default assumption)** — a real side effect of your change.
-   - **Acceptable** — you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't reject or ignore these yet — hold off until Step 6, where the verdict gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
-   - **Can't fix, and can't confidently justify either** — don't get stuck looping over it.
+   - **Regression (the default assumption)** — a real side effect of your change. Fix the code so the behavior/output matches the pre-change baseline, then go back to Step 3 to rebuild and re-run (new build, same base).
+   - **Acceptable** — you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any.
+   - **Can't fix, and can't confidently justify either** — don't get stuck looping over it; leave it, and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
 
-For a **regression**, reject it right away so there's a paper trail as you go — even though you're both reviewer and implementer here:
+**Do not call `reject-diff` / `ignore-diff` during this local iteration.** Those commands require a PR-linked test run (there's nowhere to record a decision otherwise), and provisional local runs — especially ephemeral dirty-tree commits — are not PR-linked. Hold every verdict until Step 6, where it gets filed against the PR's own CI-triggered run.
 
-```bash
-# CLI
-meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reason="<what broke>" --x=<0..1> --y=<0..1>
-
-# MCP
-reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<what broke>", x=<0..1>, y=<0..1>)
-```
-
-Then fix the code so the behavior/output matches the pre-change baseline, and go back to Step 3 to rebuild and re-run (new build, same base). Once a later run confirms that diff no longer reproduces, close the loop by replying "Fixed" to the comment thread you just created — find its root `id` via `agent diff-comments` for that `replayDiffId`/`screenshotName`:
-
-```bash
-# CLI
-meticulous agent reply-to-diff-comment --commentId=<id> --text="Fixed."
-
-# MCP
-reply_to_diff_comment(commentId="<id>", text="Fixed.")
-```
-
-A diff you can't fix and can't confidently justify gets rejected the same way, with a reason explaining what's blocking you so the thread reflects reality — but leave it unresolved (no "Fixed" reply), and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
-
-Repeat Steps 3-4 until either no diffs remain, or every remaining diff is justified or explicitly flagged as unresolved.
+Repeat Steps 3-4 until either no diffs remain, or every remaining diff is justified or explicitly called out as unresolved.
 
 ## Step 5 -- Create the PR
 
@@ -101,17 +81,22 @@ get_test_run_diffs(commitSha="<sha>")
 
 If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.
 
-For every diff that's still present here and that you justified rather than fixed (Step 4), leave your reasoning on the record via `ignore-diff` — this is the run CI and a human reviewer will actually see, so it's where that verdict needs to be filed:
+For every diff that's still present here from Step 4, file the verdict on this PR-linked run — the one CI and a human reviewer will actually see:
+
+- **Acceptable / justified** → `ignore-diff` with the reasoning.
+- **Can't fix / unresolved** → `reject-diff` with a reason explaining what's blocking you (leave it unresolved — no "Fixed" reply).
 
 ```bash
 # CLI
 meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why it's justified>" --x=<0..1> --y=<0..1>
+meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reason="<what's blocking>" --x=<0..1> --y=<0..1>
 
 # MCP
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's justified>", x=<0..1>, y=<0..1>)
+reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<what's blocking>", x=<0..1>, y=<0..1>)
 ```
 
-`ignore-diff` decides nothing — the diff stays `unreviewed` and the check stays pending — but it puts your reasoning on record so the human reviewing the PR doesn't have to re-derive it.
+`ignore-diff` decides nothing — the diff stays `unreviewed` and the check stays pending — but it puts your reasoning on record so the human reviewing the PR doesn't have to re-derive it. `reject-diff` writes a real, blocking decision.
 
 ## Step 7 -- Report feedback to Meticulous
 
