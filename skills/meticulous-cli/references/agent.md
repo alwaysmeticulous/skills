@@ -4,7 +4,7 @@ Read, analysis, and run-triggering commands designed for AI coding agents. They 
 
 All commands are also exposed as tools on the hosted **MCP server** (`https://app.meticulous.ai/api/mcp`) — an MCP-enabled client can call the `get_…` tool directly instead of shelling out. Each read tool takes broadly the same arguments and returns the same data as the CLI command's `--json` output, with differences inherent to a hosted endpoint with no access to your local repo or filesystem: **`commitSha`/`baseSha`/`gitDiffOutput` are never inferred — always compute and pass them explicitly** (e.g. `git rev-parse HEAD`, `git merge-base origin/main HEAD`), there are no output-format flags, and — for `image-files` — you get signed URLs rather than files downloaded to disk. The **MCP tool** column below gives the mapping.
 
-`upload-build`/`trigger-test-run` (the mutating commands) map to MCP tools too, but not 1:1 — the CLI's single `agent upload-build` call is split into a **request → (upload) → register** pair on MCP (`request_asset_upload`/`request_container_upload` then `register_asset_build`/`register_container_build`), and `trigger_test_run` **does not wait for the run to finish** (unlike the CLI, which blocks by default). No separate "is it done" check is needed to follow it, though: `get_test_run_diffs` already waits out an in-progress run internally (reporting `pending`/`processing` the whole time, same as it does while computing the diff summary itself), so just poll that one call. `get_test_run_diffs_counts` has no such wait — don't rely on it to detect completion, since on an in-progress run it returns whatever partial counts currently exist rather than telling you to wait. See the `meticulous-zero-diff-task` skill for the CLI workflow; use `mcp-server.ts`/the in-app MCP docs for the exact MCP tool call sequence.
+`upload-build`/`trigger-test-run` (the mutating commands) map to MCP tools too, but not 1:1 — the CLI's single `agent upload-build` call is split into a **request → (upload) → register** pair on MCP (`request_asset_upload`/`request_container_upload` then `register_asset_build`/`register_container_build`), and `trigger_test_run` **does not wait for the run to finish** (unlike the CLI, which blocks by default). No separate "is it done" check is needed to follow it, though: `get_test_run_diffs` already waits out an in-progress run internally (reporting `pending`/`processing` the whole time, same as it does while computing the diff summary itself), so just poll that one call. `get_test_run_diffs_counts` has no such wait — don't rely on it to detect completion, since on an in-progress run it returns whatever partial counts currently exist rather than telling you to wait. See the `meticulous-test` or `meticulous-zero-diff-task` skill for the CLI workflow; use `mcp-server.ts`/the in-app MCP docs for the exact MCP tool call sequence.
 
 ## Common options
 
@@ -295,7 +295,7 @@ request_asset_upload()      # or request_container_upload()
 register_asset_build(uploadId="<id>")      # or register_container_build(uploadId="<id>")
 ```
 
-**Purpose:** Upload a build and register a reusable deployment **without** triggering a run. Outputs the `deploymentId`. The commit defaults to the local git HEAD (a dirty working tree is captured as an ephemeral commit; untracked files are rejected). See the `meticulous-zero-diff-task` skill for the full workflow.
+**Purpose:** Upload a build and register a reusable deployment **without** triggering a run. Outputs the `deploymentId`. The commit defaults to the local git HEAD (a dirty working tree is captured as an ephemeral commit; untracked files are rejected). See the `meticulous-test` or `meticulous-zero-diff-task` skill for the full workflow.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -319,7 +319,7 @@ meticulous agent trigger-test-run [--deploymentId=<id>] [--baseSha=<sha>] [optio
 trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 ```
 
-**Purpose:** Trigger a test run against a deployment from `agent upload-build`, comparing against a base. Outputs the `testRunId`. A base is required (auto-inferred from the repo, or set via `--baseSha`). Omit `--deploymentId` to reuse the most recent deployment for the local HEAD commit (requires a clean working tree). See the `meticulous-zero-diff-task` skill.
+**Purpose:** Trigger a test run against a deployment from `agent upload-build`, comparing against a base. Outputs the `testRunId`. A base is required (auto-inferred from the repo, or set via `--baseSha`). Omit `--deploymentId` to reuse the most recent deployment for the local HEAD commit (requires a clean working tree). See the `meticulous-test` or `meticulous-zero-diff-task` skill.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
