@@ -61,7 +61,7 @@ meticulous auth login
 meticulous auth set-project
 ```
 
-**Purpose:** Change the default project used by project-scoped commands (and the MCP server) without re-authenticating. Shows an interactive picker when run without `--project`. OAuth-only: it fails outright when a non-OAuth API token is in use (`METICULOUS_API_TOKEN`, or a token in `~/.meticulous/config.json`), since such a token is already bound to a single project — log out and unset the env var first if you want to pick a project as a user instead.
+**Purpose:** Change the default project used by project-scoped commands (and the MCP server) without re-authenticating. Shows an interactive picker when run without `--project`. OAuth-only: it fails outright when a non-OAuth API token is in use (`METICULOUS_API_TOKEN`, or a token in `~/.meticulous/config.json`), since such a token is already bound to a single project. To pick a project as a user instead, remove that token first — unset `METICULOUS_API_TOKEN` and/or delete the `apiToken` entry from `~/.meticulous/config.json` — then run `meticulous auth login`.
 
 **Options:**
 
@@ -117,6 +117,8 @@ meticulous auth logout
 **Effects:**
 - Deletes the cached OAuth token file used by the CLI
 - Subsequent commands that require authentication will prompt for login again
+- Clears **only** OAuth tokens: a `METICULOUS_API_TOKEN` env var or an `apiToken` in `~/.meticulous/config.json` survives and keeps being used — logout warns about each and they have to be removed by hand
+- Leaves the account's default project alone (it's a server-side per-user setting, so it's still there after logging back in)
 
 **Example:**
 ```bash
