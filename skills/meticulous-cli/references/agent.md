@@ -135,7 +135,9 @@ ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..
 - **`reject-diff`** writes a real `rejected` decision — the same `decision` a human rejection would write, blocking the check identically, and replacing whatever decision (human or agent) was there before.
 - **`ignore-diff` decides nothing.** It only posts a comment stating the agent's view that the diff is expected variation; the diff stays `unreviewed` and the check stays pending. This is intentional, not a limitation to work around: only a human can write `accepted`/`ignored`, so no holder of a project write token can green their own pull request. An agent can escalate a diff (reject) but never clear one.
 
-The test run must belong to a pull request (there's nowhere to record a decision otherwise). Repeating the exact same `reject-diff` call is a no-op (no duplicate comment) since it's backed by a real decision to dedup against — a retry after a dropped connection is safe. `ignore-diff` has no decision to dedup against, so **every call posts a new comment**, same as `create-diff-comment`; don't retry it blindly.
+The test run must belong to a pull request, or be a custom-trigger run — the run you triggered yourself, where the decision is recorded against the run itself. A run that's neither (a plain push or crawler run) has nowhere to record a decision, and the call is rejected.
+
+**Every call posts a new comment**, same as `create-diff-comment` — including a `reject-diff` repeating a verdict the diff already carries. That repeat appends no second decision (the verdict already stands), but it still records its own reason and coordinates and returns that comment's `id`, so a retry after a dropped connection is safe for the decision while leaving an extra comment on the thread. A `reject-diff` that *changes* the standing verdict resolves the comment behind the decision it replaces.
 
 | Option             | Type   | Description                                            |
 | ------------------ | ------ | ------------------------------------------------------ |
@@ -159,7 +161,7 @@ reply_to_diff_comment(commentId="<id>", text="...")
 
 **Purpose:** Start a review comment thread on a screenshot diff at required approximate normalized coordinates, or reply to an existing root comment. Replies inherit the root thread's anchor, so they take no `--x`/`--y`. Each command outputs the created comment or reply ID (`{ commentId }` with `--json`). Keep comment text succinct, ideally 1–3 sentences.
 
-Unlike `reject-diff`/`ignore-diff`, these are **not** idempotent — each call adds another comment.
+Each call adds another comment, same as `reject-diff`/`ignore-diff` — none of them are idempotent.
 
 ## agent image-urls / agent image-files
 
