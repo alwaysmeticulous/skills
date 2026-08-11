@@ -153,12 +153,13 @@ The skills themselves are also under active development. How to update them depe
 - **Installed with `npx skills`** — the default. Skill files live under `.claude/skills/`, `.cursor/skills/`, or the equivalent for the agent, alongside a `skills-lock.json`:
 
   ```bash
-  npx skills update --project   # or: npx skills update -g, for skills installed globally
+  # Install or update all skills, for the specified agents
+  npx skills add alwaysmeticulous/skills --skill "*" --agent claude-code --agent codex --agent cursor -y
   ```
 
-  This is also the safe thing to try when you can't tell how the skills were installed: with nothing installed that way it just prints "No project skills to update" and exits.
+  Only run this once you've seen a `skills-lock.json` (or the skill files themselves) in the project, since it would otherwise install a second copy alongside a plugin install.
 
-- **Installed as the Claude Code plugin** — the skills show up namespaced as `/meticulous:<skill-name>`, and `claude plugin list` lists `meticulous@meticulous`. `npx skills update` won't touch these; update the plugin instead:
+- **Installed as the Claude Code plugin** — the skills show up namespaced as `/meticulous:<skill-name>`, and `claude plugin list` lists `meticulous@meticulous`. `npx skills` won't touch these; update the plugin instead:
 
   ```bash
   claude plugin update meticulous@meticulous
