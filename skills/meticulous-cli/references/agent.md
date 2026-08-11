@@ -130,7 +130,7 @@ reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
 ```
 
-**Purpose:** Record an agent's verdict on one screenshot difference, backed by a review comment containing a succinct reason at required approximate normalized coordinates. Returns the created comment's `id` — pass it as `--commentId` to a later `reply-to-diff-comment` call (e.g. to reply "Fixed" once addressed) instead of looking it up via `agent diff-comments`. The two are **not symmetric**:
+**Purpose:** Record an agent's verdict on one screenshot difference, backed by a review comment containing a succinct reason at required approximate normalized coordinates. Returns the created comment's `id`. The two are **not symmetric**:
 
 - **`reject-diff`** writes a real `rejected` decision — the same `decision` a human rejection would write, blocking the check identically, and replacing whatever decision (human or agent) was there before.
 - **`ignore-diff` decides nothing.** It only posts a comment stating the agent's view that the diff is expected variation; the diff stays `unreviewed` and the check stays pending. This is intentional, not a limitation to work around: only a human can write `accepted`/`ignored`, so no holder of a project write token can green their own pull request. An agent can escalate a diff (reject) but never clear one.
