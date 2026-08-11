@@ -64,7 +64,7 @@ meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reaso
 reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<what broke>", x=<0..1>, y=<0..1>)
 ```
 
-Then fix the code so the behavior/output matches the pre-change baseline, and go back to Step 3 to rebuild and re-run (new build, same base). Once a later run confirms that diff no longer reproduces, close the loop by replying "Fixed" to the comment thread — `reject-diff` returns the comment's `id` in its output, so reuse that directly rather than looking it up again:
+Then fix the code so the behavior/output matches the pre-change baseline, and go back to Step 3 to rebuild and re-run (new build, same base). Once a later run confirms that diff no longer reproduces, close the loop by replying "Fixed" to the comment thread — pass the `id` `reject-diff` returned as `--commentId`:
 
 ```bash
 # CLI
