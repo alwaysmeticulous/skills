@@ -78,6 +78,27 @@ formatter. Keeping the source formatted the same way avoids that entirely, so
 `.oxfmtrc.json` here mirrors the settings used in the repositories these skills
 are consumed from (notably `printWidth: 80`).
 
+Two things to know if you change the formatter config:
+
+- oxfmt also reads `.editorconfig`, with `.oxfmtrc.json` taking precedence.
+  This repository deliberately has no `.editorconfig`, relying on oxfmt's
+  defaults for `indent_size`, `indent_style`, `end_of_line` and
+  `insert_final_newline` — which is what the consuming repositories' own
+  `.editorconfig` files happen to specify too. Comparing `.oxfmtrc.json` files
+  alone is therefore not enough to conclude formatting agrees.
+- To check a real sync end to end, copy the skills into a consuming repository
+  and run **its** formatter over them there, so its config, `.editorconfig` and
+  installed oxfmt version all apply:
+
+  ```bash
+  mkdir -p <consumer>/.claude/skills/fmt-probe
+  git archive HEAD skills | tar -x -C <consumer>/.claude/skills/fmt-probe
+  cd <consumer> && pnpm exec oxfmt --check .claude/skills/fmt-probe
+  ```
+
+  Anything it reports is a rewrite a sync into that repository would perform.
+  Remember to delete the probe directory afterwards.
+
 ## License
 
 [ISC](LICENSE) © Meticulous, Inc.
