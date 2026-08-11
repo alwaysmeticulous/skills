@@ -34,6 +34,8 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `image-files` | Download a screenshot diff's images to disk | *(none — use `get_image_urls`)* |
 | `dom-diff` | DOM diff for a screenshot diff | `get_dom_diff` |
 | `timeline-diff` | Timeline event diffs for a replay diff | `get_timeline_diff` |
+| `test-run-check` | Get the Markdown report for a non-visual check | `get_test_run_check` |
+| `test-run-check --availableIds` | List the check IDs available for a test run | `get_test_run_check_available_ids` |
 | `js-coverage --testRunId` | Per-file JS coverage for a test run | `get_test_run_js_coverage` |
 | `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run | `get_project_js_coverage` |
 | `js-coverage --replayId` | Per-file JS coverage for a replay | `get_replay_js_coverage` |
@@ -214,6 +216,38 @@ get_timeline_diff(replayDiffId="<id>")
 | Option | Type | Description |
 |--------|------|-------------|
 | `--replayDiffId` | string | Replay diff (required) |
+
+## agent test-run-check
+
+```bash
+# CLI
+meticulous agent test-run-check --checkId=<id> [--checkType=builtin|custom] [--testRunId=<id> | --commitSha=<sha>]
+meticulous agent test-run-check --availableIds [--testRunId=<id> | --commitSha=<sha>]
+
+# MCP
+get_test_run_check(testRunId="<id>", checkId="<id>")
+get_test_run_check_available_ids(testRunId="<id>")
+```
+
+**Purpose:** Get the Markdown report for a builtin or customer-reported non-visual check on a test run, or — with `--availableIds` — list the check IDs that have reported results so far instead of fetching a report.
+
+Report mode prints the report text; `--availableIds` prints a TSV table with columns `checkType` and `checkId` (MCP: a list of objects with those two attributes).
+
+A report result is `{ status: 'processing' }` while results have not been reported yet — poll every 10s until `complete`, for at most 3 minutes; if it's still `processing` then, stop and tell the user the results have not arrived rather than polling on. Once complete it's `{ status: 'complete', text }`; a `{ status: 'failed', reason }` result is final — there is no way to retry. For `--checkType custom`, an error saying the run is not expecting custom check results can be transient shortly after the run completes, since the customer's own CI registers its checks separately: retry for a minute or so before concluding the run has no custom checks.
+
+`--availableIds` (MCP: `get_test_run_check_available_ids`) never waits for the test run or its checks to finish, unlike fetching a report — it returns whatever check IDs have reported results so far. An empty list shortly after triggering a run can mean the checks simply haven't reported yet rather than that none exist, so retry for a minute or so (the same budget a report fetch gives itself) before concluding the run has no checks.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--testRunId` | string | — | Target run explicitly (else resolved from `--commitSha`, else git HEAD) |
+| `--commitSha` | string | current git HEAD | Resolve the latest run for this commit |
+| `--project` | string | default project | One-off override (id, `org/proj`, or `proj`); cannot be combined with `--testRunId` |
+| `--checkType` | string | `builtin` | `builtin` for a Meticulous-provided check, or `custom` for a customer-reported check |
+| `--checkId` | string | — | The check ID; required unless `--availableIds` is set. Use `--availableIds` to discover it |
+| `--availableIds` | boolean | `false` | List the check IDs that have reported results for the run, instead of fetching a report. Cannot be combined with `--checkId`, `--checkType`, or `--dontWaitForTestRunToComplete` |
+| `--dontWaitForTestRunToComplete` | boolean | `false` | Report an in-progress run and exit immediately instead of waiting (report mode only) |
+
+On MCP, `get_test_run_check` does not poll internally — poll it yourself every 10s until `status` is `complete` or `failed` (final — no retry).
 
 ## agent js-coverage
 
