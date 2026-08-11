@@ -12,6 +12,8 @@ This only needs to run **once per conversation**. If you've already run it earli
 
 **Using the MCP server instead of the CLI?** Steps 1-4 are about installing/updating the `meticulous` CLI binary and its own local auth — neither applies when calling tools on the hosted [Meticulous MCP server](https://app.meticulous.ai/api/mcp), which is already on the latest version and authenticates via the MCP connection itself, not `meticulous auth login`. Skip straight to **Step 5**: the installed **skills** (this document set) are a separate thing from the CLI/MCP tool itself and still need to stay current either way, regardless of which one you're calling tools through.
 
+Full setup instructions — installing the CLI, connecting the MCP server, and installing these skills — live at [app.meticulous.ai/docs/agents/setup](https://app.meticulous.ai/docs/agents/setup).
+
 ## How to handle the install/update commands
 
 This skill normally runs as a sub-step of another Meticulous skill. The install/update commands below (Steps 1, 3, and 5) are security-sensitive — they install packages and reach the network — so treat them as **best-effort and non-blocking**:
@@ -72,7 +74,37 @@ Verify the user is authenticated with Meticulous and has a project selected:
 meticulous auth whoami
 ```
 
-**If it reports "No authentication found"**, sign-in is needed. Sign-in is browser SSO, so a human always has to complete it in a browser; which login command to use depends on where you're running:
+Add `--json` if you'd rather branch on structured output — it prints `authenticatedVia` and `selectedProject`.
+
+There are four outcomes:
+
+### (a) Signed in via OAuth, with a project selected
+
+```
+Authenticated via: OAuth
+Logged in as: Jane Smith (jane@example.com)
+Organizations: acme-corp (member)
+Selected project: acme-corp/Web App
+```
+
+Nothing to do — continue to Step 5.
+
+### (b) Authenticated by an API token or injected credentials
+
+```
+Authenticated via: project API token (METICULOUS_API_TOKEN environment variable)
+Pinned project: acme-corp/Web App
+```
+
+Also seen as `project API token (~/.meticulous/config.json)`, `test-run API token`, or `credentials injected at request time` (agent platforms that attach a bearer credential to outbound requests to `app.meticulous.ai`). These tokens are scoped to a single project, which is already pinned, so there is nothing to select — do **not** run `meticulous auth set-project`, which fails while a token is in use. Continue to Step 5.
+
+### (c) "Not logged in"
+
+The command exits with:
+
+> Not logged in. Run `meticulous auth login`, or set METICULOUS_API_TOKEN. In terminals without a browser, use `meticulous auth login --non-interactive`.
+
+Sign-in is browser SSO, so a human always has to complete it in a browser; which login command to use depends on where you're running:
 
 - **On the user's own machine** (a browser there can reach this machine's localhost):
 
@@ -92,20 +124,45 @@ meticulous auth whoami
 
   This uses the OAuth device flow: it prints a URL and a short code instead of waiting on a local callback. Run it in the background, then surface the URL and code to the user and ask them to open the URL on any device and enter the code. Once confirmed, the command finishes and stores the token.
 
-**If it reports "No project selected"** (this happens when the user belongs to multiple projects — including right after a non-interactive login, which skips the project picker), a project must be chosen before project-scoped commands work. Ask the user which organization/project to use (if you don't already know), then pin it non-interactively:
+Both forms skip the interactive project picker, so add `--project "Organization/Project"` when you already know which project to use — that logs in and pins the project in one step, avoiding case (d) below. In a CI-like environment with no human available at all, the alternative is an API token: set `METICULOUS_API_TOKEN` (or pass `--apiToken`) instead of logging in.
+
+### (d) Signed in via OAuth, but no default project
+
+`whoami` succeeds and additionally logs (on stderr):
+
+> No default project set. Run `meticulous auth set-project` to choose one.
+
+Project-scoped commands can't resolve a project in this state. It happens for accounts with access to several projects — including right after a `--non-interactive` or `--device` login, which skips the picker. List the options, then pin one:
 
 ```bash
+meticulous auth list-projects   # one "organization/project" slug per line
 meticulous auth set-project --project "Organization/Project"
 ```
 
-Alternatively, ask the user to run `meticulous auth set-project` themselves (it shows an interactive picker).
+Ask the user which one to use unless it's unambiguous (e.g. only one project is listed, or the repo clearly corresponds to one of them). Alternatively, ask the user to run `meticulous auth set-project` themselves — without `--project` it shows an interactive picker.
+
+The selection is saved to the account rather than the machine, so it also applies to the MCP server and to the user's other machines. `meticulous auth get-project` prints the currently resolved project on its own.
 
 ## Step 5 — Update the installed Meticulous skills
 
-The skills themselves are also under active development. Update them to the latest version (best-effort, see the note above):
+The skills themselves are also under active development. How to update them depends on how they were installed (best-effort, see the note above):
 
-```bash
-npx skills update --project
-```
+- **Installed with `npx skills`** — the default. Skill files live under `.claude/skills/`, `.cursor/skills/`, or the equivalent for the agent, alongside a `skills-lock.json`:
 
-If this isn't whitelisted, recommend the user run it themselves. Either way — whether it ran, or the user declined — proceed with the calling skill.
+  ```bash
+  npx skills update --project   # or: npx skills update -g, for skills installed globally
+  ```
+
+  This is also the safe thing to try when you can't tell how the skills were installed: with nothing installed that way it just prints "No project skills to update" and exits.
+
+- **Installed as the Claude Code plugin** — the skills show up namespaced as `/meticulous:<skill-name>`, and `claude plugin list` lists `meticulous@meticulous`. `npx skills update` won't touch these; update the plugin instead:
+
+  ```bash
+  claude plugin update meticulous@meticulous
+  ```
+
+  Tell the user the update only takes effect after they restart Claude Code (they can also do this from the `/plugin` menu themselves). One exception: if `claude plugin list` reports the plugin's scope as `managed`, it's pinned by their organization's managed settings — don't try to update it, just mention it to the user.
+
+- **Installed from the Cursor plugin marketplace** — there's no command to run; recommend the user update it from Cursor's **Customize → Plugins**.
+
+If the applicable command isn't whitelisted, recommend the user run it themselves. Either way — whether it ran, or the user declined — proceed with the calling skill.

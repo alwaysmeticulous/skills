@@ -8,23 +8,28 @@ Authentication management for the Meticulous CLI. OAuth tokens are stored on dis
 meticulous auth whoami
 ```
 
-**Purpose:** Display the currently authenticated user. If no valid token is stored, opens an OAuth browser login flow to authenticate.
+**Purpose:** Report how the CLI is currently authenticated, and which project project-scoped commands would use.
 
-**Output:** Logs name, email, admin status, and the list of organizations the user belongs to.
+**Output:** How the credential was obtained (`OAuth`, `project API token` / `test-run API token` plus where the token came from, or `credentials injected at request time`) and, for OAuth, name, email, admin status, and the organizations the user belongs to. Ends with the selected/pinned project when there is one.
+
+**Options:**
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--json` | boolean | `false` | Print `{authenticatedVia, selectedProject, …}` on stdout instead of human-readable lines |
 
 **Effects:**
-- Reads the stored OAuth token
-- If no token exists or it is expired (HTTP 403), prompts an interactive OAuth login
-- Does not modify any stored state itself
+- Read-only — reads the stored token (or probes for injected credentials) and queries the API
+- In an interactive terminal with no stored token, the underlying auth chain may open a browser sign-in; with no TTY it instead fails with `Not logged in. Run \`meticulous auth login\`, or set METICULOUS_API_TOKEN. …`
+- For an OAuth caller with no default project, additionally logs `No default project set. Run \`meticulous auth set-project\` to choose one.` on stderr
 
 **Example output:**
 ```
+Authenticated via: OAuth
 Logged in as: Jane Smith (jane@example.com)
-Organizations:
-  - acme-corp
+Organizations: acme-corp (member)
+Selected project: acme-corp/Web App
 ```
-
-**No options** beyond global flags.
 
 ---
 

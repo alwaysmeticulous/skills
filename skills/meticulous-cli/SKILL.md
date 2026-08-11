@@ -55,9 +55,9 @@ These options are accepted by every command:
 
 ## Authentication
 
-Commands authenticate via OAuth. The login token is stored on disk and reused across sessions — if you're not logged in, an interactive command opens a browser sign-in automatically (or run `meticulous auth whoami` to trigger it). See [references/auth.md](references/auth.md).
+Commands authenticate via OAuth. The login token is stored on disk and reused across sessions — in an interactive terminal, a command that needs auth opens a browser sign-in automatically; without a TTY (the usual agent case) it fails and tells you to run `meticulous auth login`. Run `meticulous auth whoami` to see the current state. Project-scoped commands also need a default project, set at login or with `meticulous auth set-project`. See [references/auth.md](references/auth.md).
 
-An API token (via `--apiToken` or the `METICULOUS_API_TOKEN` environment variable, scoped to a specific organization/project) is also supported, and is the way to authenticate in non-interactive contexts such as CI.
+An API token (via `--apiToken` or the `METICULOUS_API_TOKEN` environment variable, scoped to a specific organization/project) is also supported, and is the way to authenticate in non-interactive contexts such as CI. Some agent platforms instead inject a bearer credential into outbound requests to `app.meticulous.ai`; that works too, and `auth whoami` reports it as `credentials injected at request time`.
 
 ## MCP server
 
