@@ -49,13 +49,32 @@ Inspect the diffs using the mechanics from the `meticulous-review` skill (Steps 
 **For a no-diff task, treat every returned diff as a bug until proven otherwise.** The premise of this skill is that the UI shouldn't change, so:
 
 1. **No diffs at all** — you're done with this step; proceed to Step 5.
-2. **One or more diffs** — for each one:
-   - Look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why.
-   - Use the timeline (the `meticulous-review` skill's Step 4) if the cause isn't obvious from the DOM/images alone — a version bump, a changed default, a reordered dependency, etc. often shows up there.
-   - **The default assumption is that this is a regression caused by your change.** Reject it now, using the `meticulous-review` skill's Step 6 mechanics (`agent reject-diff --reason="<why>"`) — this leaves a paper trail even though you're both reviewer and implementer here. Then fix the code so the behavior/output matches the pre-change baseline, and go back to Step 3 to rebuild and re-run (new build, same base).
-   - Once a later run confirms that diff no longer reproduces, close the loop on the rejection you filed: reply "Fixed" to its comment thread, using the `meticulous-fix` skill's Step 4 mechanics (`agent reply-to-diff-comment`, with the thread's root `id` from `agent diff-comments` for that `replayDiffId`/`screenshotName`).
-   - Only treat a diff as acceptable if you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't reject or ignore these yet — hold off until Step 6, where the verdict gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
-   - If a diff can't be fixed and can't be confidently justified either, don't get stuck looping — reject it anyway with a reason explaining what's blocking you, so the thread reflects reality; leave it unresolved, and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
+2. **One or more diffs** — for each one, look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why, using the timeline (Step 4 there) if the cause isn't obvious from the DOM/images alone. Then classify it:
+   - **Regression (the default assumption)** — a real side effect of your change.
+   - **Acceptable** — you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't reject or ignore these yet — hold off until Step 6, where the verdict gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
+   - **Can't fix, and can't confidently justify either** — don't get stuck looping over it.
+
+For a **regression**, reject it right away so there's a paper trail as you go — even though you're both reviewer and implementer here:
+
+```bash
+# CLI
+meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reason="<what broke>" --x=<0..1> --y=<0..1>
+
+# MCP
+reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<what broke>", x=<0..1>, y=<0..1>)
+```
+
+Then fix the code so the behavior/output matches the pre-change baseline, and go back to Step 3 to rebuild and re-run (new build, same base). Once a later run confirms that diff no longer reproduces, close the loop by replying "Fixed" to the comment thread you just created — find its root `id` via `agent diff-comments` for that `replayDiffId`/`screenshotName`:
+
+```bash
+# CLI
+meticulous agent reply-to-diff-comment --commentId=<id> --text="Fixed."
+
+# MCP
+reply_to_diff_comment(commentId="<id>", text="Fixed.")
+```
+
+A diff you can't fix and can't confidently justify gets rejected the same way, with a reason explaining what's blocking you so the thread reflects reality — but leave it unresolved (no "Fixed" reply), and call it out clearly and specifically in the final report and in the PR description (Step 5) so a human can make the call.
 
 Repeat Steps 3-4 until either no diffs remain, or every remaining diff is justified or explicitly flagged as unresolved.
 
