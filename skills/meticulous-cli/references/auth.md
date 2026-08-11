@@ -61,7 +61,7 @@ meticulous auth login
 meticulous auth set-project
 ```
 
-**Purpose:** Change the default project used by project-scoped commands (and the MCP server) without re-authenticating. Shows an interactive picker when run without `--project`.
+**Purpose:** Change the default project used by project-scoped commands (and the MCP server) without re-authenticating. Shows an interactive picker when run without `--project`. OAuth-only: it fails outright when a non-OAuth API token is in use (`METICULOUS_API_TOKEN`, or a token in `~/.meticulous/config.json`), since such a token is already bound to a single project — log out and unset the env var first if you want to pick a project as a user instead.
 
 **Options:**
 
@@ -71,6 +71,7 @@ meticulous auth set-project
 
 **Effects:**
 - Updates the default project saved to the account
+- Errors without changing anything when authenticated via a non-OAuth API token
 
 ---
 

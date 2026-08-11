@@ -96,7 +96,7 @@ Authenticated via: project API token (METICULOUS_API_TOKEN environment variable)
 Pinned project: acme-corp/Web App
 ```
 
-Also seen as `project API token (~/.meticulous/config.json)`, `test-run API token`, or `credentials injected at request time` (agent platforms that attach a bearer credential to outbound requests to `app.meticulous.ai`). These tokens are scoped to a single project, which is already pinned, so there is nothing to select — do **not** run `meticulous auth set-project`, which fails while a token is in use. Continue to Step 5.
+Also seen as `project API token (~/.meticulous/config.json)`, `test-run API token`, or `credentials injected at request time` (agent platforms that attach a bearer credential to outbound requests to `app.meticulous.ai`). These credentials are scoped to a single project, which is already pinned, so there is nothing to select — do **not** run `meticulous auth set-project`: with an API token it errors out (the token is bound to one project), and with injected credentials there is likewise nothing to choose. Continue to Step 5.
 
 ### (c) "Not logged in"
 
@@ -124,7 +124,9 @@ Sign-in is browser SSO, so a human always has to complete it in a browser; which
 
   This uses the OAuth device flow: it prints a URL and a short code instead of waiting on a local callback. Run it in the background, then surface the URL and code to the user and ask them to open the URL on any device and enter the code. Once confirmed, the command finishes and stores the token.
 
-Both forms skip the interactive project picker, so add `--project "Organization/Project"` when you already know which project to use — that logs in and pins the project in one step, avoiding case (d) below. In a CI-like environment with no human available at all, the alternative is an API token: set `METICULOUS_API_TOKEN` (or pass `--apiToken`) instead of logging in.
+Both forms skip the interactive project picker, so add `--project "Organization/Project"` when you already know which project to use — that logs in and pins the project in one step. Without `--project`, an account with access to several projects lands in case (d) below, so re-run `meticulous auth whoami` once login completes and handle whichever case it reports before continuing to Step 5.
+
+In a CI-like environment with no human available at all, the alternative is an API token: set `METICULOUS_API_TOKEN` (or pass `--apiToken`) instead of logging in.
 
 ### (d) Signed in via OAuth, but no default project
 
