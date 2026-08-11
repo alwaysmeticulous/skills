@@ -60,6 +60,4 @@ Note the `testRunId` from the output.
 
 Follow the `meticulous-review` skill, passing the `testRunId` from Step 3. It fetches the diff summary, inspects representative screenshots / DOM diffs / timelines, and produces a final report classifying each visual change as intended or unintended.
 
-This skill runs **before a PR exists**, so the review's Step 6 (`reject-diff` / `ignore-diff`) will be skipped — those commands need a PR-linked test run. Expect classify-and-report only here; file reject/ignore verdicts later on the PR's own CI-triggered run.
-
 > **Uncommitted changes:** if you built/tested with a dirty working tree, the run is recorded against an ephemeral commit that is not your HEAD (and isn't pushed). Commands that resolve a run from the local checkout — `meticulous-review` / `agent test-run-diffs` run with no `--testRunId` — won't find it by commit, so **always pass the explicit `--testRunId`** to the review step in that case.

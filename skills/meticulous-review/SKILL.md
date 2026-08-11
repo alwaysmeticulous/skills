@@ -1,6 +1,6 @@
 ---
 name: meticulous-review
-description: Analyze a completed Meticulous test run — compare the diffs against the PR description to see what's expected, then focus on finding and flagging potential regressions. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID or commit SHA. Use when asked to review Meticulous test results, or when babysitting a pull/merge request's Meticulous Tests CI check. Flagging via reject-diff/ignore-diff requires a PR-linked run; on a pre-PR local run, classify and report only.
+description: Analyze a completed Meticulous test run — compare the diffs against the PR description to see what's expected, then focus on finding and flagging potential regressions. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID or commit SHA. Use when asked to review Meticulous test results, when babysitting a pull/merge request's Meticulous Tests CI check, or right after implementing a frontend change yourself.
 user-invocable: true
 ---
 
@@ -93,19 +93,15 @@ TSV columns: `diff` (` ` identical, `-` removed, `+` added, `!` changed), `timeM
 For each representative screenshot, compare the diff image and DOM diff against Step 0's expectations:
 
 - **Expected** — matches one of Step 0's expected changes (or, with full implementation context, is clearly a desired outcome). Check the diff actually looks like *that* change and nothing more — a diff can be expected in kind but still carry an extra, unrelated regression bundled into the same screenshot. Nothing to flag.
-- **Unintended** — not accounted for by Step 0. Use the timeline to rule out failed requests, redirects, or other anomalies, then (when Step 6 applies) flag it:
+- **Unintended** — not accounted for by Step 0. Use the timeline to rule out failed requests, redirects, or other anomalies, then flag it:
   - **Potential regression** (a real side effect, or otherwise clearly wrong) → **reject**.
   - **Likely flake / unrelated noise** (a flaky timestamp, non-determinism, an infra blip) → **ignore**.
 
-Either way it's not silently dropped — include it in the final report, and flag it via Step 6 when the run is PR-linked. A human still needs to see it.
+Either way it's flagged, not silently dropped — a human still needs to see it.
 
 **This skill reviews and flags — it does not fix.** Hand a rejected diff off to the `meticulous-fix` skill (or the person/skill implementing the change) — don't attempt code changes here.
 
-## Step 6 -- Flag the diff (PR-linked runs only)
-
-`reject-diff` / `ignore-diff` require the test run to belong to a pull request (there's nowhere to record a decision otherwise). **If this run is not PR-linked** — e.g. a provisional local run from the `meticulous-test` skill before a PR exists — skip this step's API calls; still classify every unintended diff in the final report, and file the verdicts later once a PR-linked run is available.
-
-When the run *is* PR-linked:
+## Step 6 -- Flag the diff
 
 ```bash
 # CLI
@@ -126,9 +122,9 @@ Call one of these for **every** diff classified as unintended, in addition to in
 Cover **all significant visual changes**.
 
 1. **Expected changes** — brief, a line or two each: what changed and which Step 0 expectation it matches.
-2. **Unintended / flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it (or only classified it, if Step 6 was skipped because the run isn't PR-linked), the reason, what the change looks like, and your best assessment of the cause.
+2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 
-The run is only good when every diff has been matched or flagged (or, on a pre-PR run, matched or classified in the report). If any diff is unintended, surface it clearly to the user — and, when Step 6 applied, in addition to the flag itself.
+The PR is only good when every diff has been matched or flagged. If any diff is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself.
 
 ## Step 8 -- Report feedback to Meticulous
 
