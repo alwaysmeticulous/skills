@@ -13,8 +13,8 @@ If you are already given a test run id, skip to Step 4.
 ## Step 1 -- Build the frontend
 
 1. Find out what build artefact Meticulous expects by checking `.github/workflows/` for one of the following steps:
-    - `uses: alwaysmeticulous/report-diffs-action/upload-assets@v1` — build assets
-    - `uses: alwaysmeticulous/report-diffs-action/upload-container@v1` — docker image
+   - `uses: alwaysmeticulous/report-diffs-action/upload-assets@v1` — build assets
+   - `uses: alwaysmeticulous/report-diffs-action/upload-container@v1` — docker image
 2. Build the frontend following the same instructions as used in the GitHub workflow.
 
 ## Step 2 -- Upload the build

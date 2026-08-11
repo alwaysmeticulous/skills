@@ -14,20 +14,21 @@ meticulous debug replay-diff <replayDiffId> [options]
 
 **Required arguments:**
 
-| Argument | Type | Description |
-|----------|------|-------------|
+| Argument       | Type                | Description                 |
+| -------------- | ------------------- | --------------------------- |
 | `replayDiffId` | string (positional) | The replay diff ID to debug |
 
 **Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
-| `--sessionId` | string | — | Override the session ID for this replay diff |
-| `--workspaceName` | string | timestamp | Custom name for the debug workspace directory |
-| `--screenshot` | string | — | Screenshot filename to focus analysis on |
+| Option            | Type   | Default   | Description                                                                    |
+| ----------------- | ------ | --------- | ------------------------------------------------------------------------------ |
+| `--apiToken`      | string | —         | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
+| `--sessionId`     | string | —         | Override the session ID for this replay diff                                   |
+| `--workspaceName` | string | timestamp | Custom name for the debug workspace directory                                  |
+| `--screenshot`    | string | —         | Screenshot filename to focus analysis on                                       |
 
 **Example:**
+
 ```bash
 meticulous debug replay-diff rd_abc123
 meticulous debug replay-diff rd_abc123 --screenshot="checkout-page.png"
@@ -45,21 +46,22 @@ meticulous debug replay <replayId> [options]
 
 **Required arguments:**
 
-| Argument | Type | Description |
-|----------|------|-------------|
+| Argument   | Type                | Description                          |
+| ---------- | ------------------- | ------------------------------------ |
 | `replayId` | string (positional) | The replay ID to debug (head replay) |
 
 **Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
-| `--baseReplayId` | string | — | Base replay ID to compare against |
-| `--sessionId` | string | — | Override the session ID |
-| `--workspaceName` | string | timestamp | Custom name for the debug workspace directory |
-| `--screenshot` | string | — | Screenshot filename to focus analysis on |
+| Option            | Type   | Default   | Description                                                                    |
+| ----------------- | ------ | --------- | ------------------------------------------------------------------------------ |
+| `--apiToken`      | string | —         | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
+| `--baseReplayId`  | string | —         | Base replay ID to compare against                                              |
+| `--sessionId`     | string | —         | Override the session ID                                                        |
+| `--workspaceName` | string | timestamp | Custom name for the debug workspace directory                                  |
+| `--screenshot`    | string | —         | Screenshot filename to focus analysis on                                       |
 
 **Example:**
+
 ```bash
 # Debug a single replay
 meticulous debug replay rpl_aaa
@@ -80,11 +82,12 @@ meticulous debug clean [--all]
 
 **Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
+| Option  | Type    | Default | Description                                                                       |
+| ------- | ------- | ------- | --------------------------------------------------------------------------------- |
 | `--all` | boolean | `false` | Delete all workspaces without prompting (useful for non-interactive environments) |
 
 **Interactive mode (default):** Lists all workspaces with their sizes, then offers three choices:
+
 1. Delete all workspaces (with confirmation)
 2. Select individual workspaces to delete
 3. Cancel
@@ -92,6 +95,7 @@ meticulous debug clean [--all]
 **Non-interactive mode (`--all`):** Lists all workspaces and deletes them immediately without prompting.
 
 **Example:**
+
 ```bash
 # Interactive cleanup
 meticulous debug clean
@@ -106,10 +110,10 @@ meticulous debug clean --all
 
 Each debug workspace contains:
 
-| Directory | Contents |
-|-----------|----------|
-| `debug-data/` | Replay archives, session recordings, diff results, filtered logs, and analysis artifacts |
-| `.claude/` | AI agent context files (CLAUDE.md, rules, skills, hooks) for assisted debugging |
+| Directory       | Contents                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| `debug-data/`   | Replay archives, session recordings, diff results, filtered logs, and analysis artifacts          |
+| `.claude/`      | AI agent context files (CLAUDE.md, rules, skills, hooks) for assisted debugging                   |
 | `project-repo/` | A git worktree of your codebase at the relevant commit (only if run from within a git repository) |
 
 The workspace path is copied to the clipboard on creation. Open it in your preferred tool:

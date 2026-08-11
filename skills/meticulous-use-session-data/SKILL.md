@@ -17,19 +17,20 @@ meticulous local relevant-sessions --format=multi-file --minimum-times-to-cover-
 ```
 
 This will:
+
 1. Identify which recorded sessions exercise the code paths changed on your current branch.
 2. Download each session's data as a structured directory tree to `.meticulous/sessions/`.
 
 **Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--format` | `multi-file` | — | Set to `multi-file` to download each relevant session's data as a structured directory tree |
-| `--minimum-times-to-cover-each-line` | number | — | Select at least this many sessions to cover each edited line, choosing the most diverse subset when more candidates are available |
-| `--include-superfluous-sessions` | boolean | `false` | Also include sessions that do test some changes but were superfluous given `--minimum-times-to-cover-each-line` |
-| `--outputDir` | string | `.meticulous/sessions` | Output directory for multi-file format |
-| `--showMaybeRelevant` | boolean | `false` | Also show sessions that may be affected |
-| `--startingPointSha` | string | — | Only consider changes since this commit SHA |
+| Option                               | Type         | Default                | Description                                                                                                                       |
+| ------------------------------------ | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `--format`                           | `multi-file` | —                      | Set to `multi-file` to download each relevant session's data as a structured directory tree                                       |
+| `--minimum-times-to-cover-each-line` | number       | —                      | Select at least this many sessions to cover each edited line, choosing the most diverse subset when more candidates are available |
+| `--include-superfluous-sessions`     | boolean      | `false`                | Also include sessions that do test some changes but were superfluous given `--minimum-times-to-cover-each-line`                   |
+| `--outputDir`                        | string       | `.meticulous/sessions` | Output directory for multi-file format                                                                                            |
+| `--showMaybeRelevant`                | boolean      | `false`                | Also show sessions that may be affected                                                                                           |
+| `--startingPointSha`                 | string       | —                      | Only consider changes since this commit SHA                                                                                       |
 
 ## Step 2 — Understand the output structure
 
@@ -80,15 +81,19 @@ The downloaded data is organized as follows:
 Common use cases:
 
 ### Understanding user flows
+
 Read `user-events.json` to see the exact sequence of user interactions. This tells you what the user clicked, typed, and navigated, which helps you understand what your code change needs to support.
 
 ### Creating network mocks
+
 Use the network request files to create mock responses for your tests:
+
 1. Read `network-requests/summary.json` to find the relevant API endpoints.
 2. Read the individual `network-requests/<order>.json` files for the full request/response pairs.
 3. Use the `response.content.text` field as mock response data in your tests.
 
 ### Verifying coverage
+
 Cross-reference the user events and network requests with your code changes to verify that the session covers the code paths you've modified.
 
 ## Alternative: Download specific sessions

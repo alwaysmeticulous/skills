@@ -12,15 +12,16 @@ meticulous project show [--apiToken=<token>]
 
 **Options:**
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `--apiToken` | string | no | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
+| Option       | Type   | Required | Description                                                                    |
+| ------------ | ------ | -------- | ------------------------------------------------------------------------------ |
+| `--apiToken` | string | no       | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 
 **Output:** Logs the full project object, including organization name, project name, and associated configuration.
 
 **Exit behaviour:** Exits with code 1 if the project cannot be retrieved (invalid or missing credentials).
 
 **Example:**
+
 ```bash
 meticulous project show
 # { name: 'my-app', organization: { name: 'acme-corp' }, ... }

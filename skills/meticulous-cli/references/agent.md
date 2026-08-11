@@ -10,40 +10,40 @@ All commands are also exposed as tools on the hosted **MCP server** (`https://ap
 
 Accepted by every `agent` command (in addition to the [global options](../SKILL.md#global-options)):
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--apiToken` | string | — | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
-| `--json` | boolean | `false` | Emit JSON on stdout instead of the default TSV/plain-text format |
-| `--verbose` | boolean | `false` | Print additional progress logs on stderr |
+| Option       | Type    | Default | Description                                                                    |
+| ------------ | ------- | ------- | ------------------------------------------------------------------------------ |
+| `--apiToken` | string  | —       | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
+| `--json`     | boolean | `false` | Emit JSON on stdout instead of the default TSV/plain-text format               |
+| `--verbose`  | boolean | `false` | Print additional progress logs on stderr                                       |
 
 Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run-diffs`, `js-coverage`, `trigger-test-run`) also accept `--project <id | org/name | name>` — a one-off override of your default project for that call only (it does not change the stored default; see [`auth`](auth.md)).
 
 ## Command → MCP tool overview
 
-| Command | Purpose | MCP tool |
-|---------|---------|----------|
-| `test-run-for-commit` | Look up the latest test run for a commit | `get_test_run_for_commit` |
-| `test-run-diffs` | List the screenshot diffs of a test run | `get_test_run_diffs` |
-| `test-run-diffs --counts` | Aggregate diff/review totals only | `get_test_run_diffs_counts` |
-| `diff-comments` | Review comments for a screenshot diff | `get_diff_comments` |
-| `reject-diff` | Reject a screenshot diff (real, blocking decision) and comment why | `reject_diff` |
-| `ignore-diff` | Comment that a screenshot diff looks like expected variation (decides nothing) | `ignore_diff` |
-| `create-diff-comment` | Start a review comment thread | `create_diff_comment` |
-| `reply-to-diff-comment` | Reply to a review comment thread | `reply_to_diff_comment` |
-| `image-urls` | Signed URLs for a screenshot diff's images | `get_image_urls` |
-| `image-files` | Download a screenshot diff's images to disk | *(none — use `get_image_urls`)* |
-| `dom-diff` | DOM diff for a screenshot diff | `get_dom_diff` |
-| `timeline-diff` | Timeline event diffs for a replay diff | `get_timeline_diff` |
-| `test-run-check` | Get the Markdown report for a non-visual check | `get_test_run_check` |
-| `test-run-check --availableIds` | List the check IDs available for a test run | `get_test_run_check_available_ids` |
-| `js-coverage --testRunId` | Per-file JS coverage for a test run | `get_test_run_js_coverage` |
-| `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run | `get_project_js_coverage` |
-| `js-coverage --replayId` | Per-file JS coverage for a replay | `get_replay_js_coverage` |
-| `js-coverage-diff` | Per-file JS coverage diff for a replay diff | `get_replay_diff_js_coverage_diff` |
-| `sessions` | List a project's recently recorded sessions | `get_sessions` |
-| `upload-build` | Upload a build, register a deployment | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
-| `trigger-test-run` | Trigger a run against a deployment | `trigger_test_run` (returns immediately — does not wait for completion) |
-| `submit-feedback` | Submit free-form feedback about Meticulous | `submit_feedback` |
+| Command                          | Purpose                                                                        | MCP tool                                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `test-run-for-commit`            | Look up the latest test run for a commit                                       | `get_test_run_for_commit`                                                                                                        |
+| `test-run-diffs`                 | List the screenshot diffs of a test run                                        | `get_test_run_diffs`                                                                                                             |
+| `test-run-diffs --counts`        | Aggregate diff/review totals only                                              | `get_test_run_diffs_counts`                                                                                                      |
+| `diff-comments`                  | Review comments for a screenshot diff                                          | `get_diff_comments`                                                                                                              |
+| `reject-diff`                    | Reject a screenshot diff (real, blocking decision) and comment why             | `reject_diff`                                                                                                                    |
+| `ignore-diff`                    | Comment that a screenshot diff looks like expected variation (decides nothing) | `ignore_diff`                                                                                                                    |
+| `create-diff-comment`            | Start a review comment thread                                                  | `create_diff_comment`                                                                                                            |
+| `reply-to-diff-comment`          | Reply to a review comment thread                                               | `reply_to_diff_comment`                                                                                                          |
+| `image-urls`                     | Signed URLs for a screenshot diff's images                                     | `get_image_urls`                                                                                                                 |
+| `image-files`                    | Download a screenshot diff's images to disk                                    | _(none — use `get_image_urls`)_                                                                                                  |
+| `dom-diff`                       | DOM diff for a screenshot diff                                                 | `get_dom_diff`                                                                                                                   |
+| `timeline-diff`                  | Timeline event diffs for a replay diff                                         | `get_timeline_diff`                                                                                                              |
+| `test-run-check`                 | Get the Markdown report for a non-visual check                                 | `get_test_run_check`                                                                                                             |
+| `test-run-check --availableIds`  | List the check IDs available for a test run                                    | `get_test_run_check_available_ids`                                                                                               |
+| `js-coverage --testRunId`        | Per-file JS coverage for a test run                                            | `get_test_run_js_coverage`                                                                                                       |
+| `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                     | `get_project_js_coverage`                                                                                                        |
+| `js-coverage --replayId`         | Per-file JS coverage for a replay                                              | `get_replay_js_coverage`                                                                                                         |
+| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff                                    | `get_replay_diff_js_coverage_diff`                                                                                               |
+| `sessions`                       | List a project's recently recorded sessions                                    | `get_sessions`                                                                                                                   |
+| `upload-build`                   | Upload a build, register a deployment                                          | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
+| `trigger-test-run`               | Trigger a run against a deployment                                             | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
+| `submit-feedback`                | Submit free-form feedback about Meticulous                                     | `submit_feedback`                                                                                                                |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
 
@@ -61,10 +61,10 @@ get_test_run_for_commit(commitSha="<sha>")
 
 **Purpose:** Look up the latest test run for a commit (defaults to the current git HEAD) and output the `testRunId`.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--commitSha` | string | current git HEAD | Commit to look up the run for |
-| `--dontWaitForTestRunToComplete` | boolean | `false` | Report an in-progress run and exit immediately instead of waiting |
+| Option                           | Type    | Default          | Description                                                       |
+| -------------------------------- | ------- | ---------------- | ----------------------------------------------------------------- |
+| `--commitSha`                    | string  | current git HEAD | Commit to look up the run for                                     |
+| `--dontWaitForTestRunToComplete` | boolean | `false`          | Report an in-progress run and exit immediately instead of waiting |
 
 ## agent test-run-diffs
 
@@ -80,25 +80,25 @@ get_test_run_diffs_counts(testRunId="<id>")
 
 **Purpose:** List the screenshot diffs for a test run — by default a selected, priority-ordered subset of representative visual differences (position in the list is the priority signal, there is no `index` column). Outputs a TSV table (`replayDiffId`, `screenshotName`, plus requested columns; `mismatchFraction` is opt-in via `--includeMismatchFraction`). See the `meticulous-review` skill for the full workflow and column semantics.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--testRunId` | string | — | Target run explicitly (else resolved from `--commitSha`, else git HEAD) |
-| `--commitSha` | string | current git HEAD | Resolve the latest run for this commit |
-| `--includeAllDiffs` | boolean | `false` | Return every difference, not just the selected subset; adds an `isSelected` column |
-| `--onlyUnreviewed` | boolean | `false` | Only diffs still awaiting review (implies `--includeAllDiffs`) |
-| `--onlyRejected` | boolean | `false` | All rejected diffs, human- or agent-rejected — the complete set of issues requiring fixes (implies `--includeAllDiffs`) |
-| `--onlyWithComments` | boolean | `false` | All diffs with one or more open review comments, regardless of decision (implies `--includeAllDiffs`) |
-| `--includeReviews` | boolean | `false` | Add `decision` and `openComments` columns with the review metadata per diff |
-| `--includeReplayIds` | boolean | `false` | Add `baseReplayId` / `headReplayId` columns |
-| `--includeMismatchFraction` | boolean | `false` | Add a `mismatchFraction` column (fraction of pixels that differ between before/after) |
-| `--includeDomDiffIds` | boolean | `false` | Add a `domDiffIds` column (one ID per distinct structural DOM change) |
-| `--orderByReplayDiffs` | boolean | `false` | Order by replay diff instead of global priority |
-| `--counts` | boolean | `false` | Print aggregate totals only (replays, differences, review-decision breakdown); cannot be combined with the list/filter flags |
-| `--dontWaitForTestRunToComplete` | boolean | `false` | Report an in-progress run and exit immediately instead of waiting |
+| Option                           | Type    | Default          | Description                                                                                                                  |
+| -------------------------------- | ------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--testRunId`                    | string  | —                | Target run explicitly (else resolved from `--commitSha`, else git HEAD)                                                      |
+| `--commitSha`                    | string  | current git HEAD | Resolve the latest run for this commit                                                                                       |
+| `--includeAllDiffs`              | boolean | `false`          | Return every difference, not just the selected subset; adds an `isSelected` column                                           |
+| `--onlyUnreviewed`               | boolean | `false`          | Only diffs still awaiting review (implies `--includeAllDiffs`)                                                               |
+| `--onlyRejected`                 | boolean | `false`          | All rejected diffs, human- or agent-rejected — the complete set of issues requiring fixes (implies `--includeAllDiffs`)      |
+| `--onlyWithComments`             | boolean | `false`          | All diffs with one or more open review comments, regardless of decision (implies `--includeAllDiffs`)                        |
+| `--includeReviews`               | boolean | `false`          | Add `decision` and `openComments` columns with the review metadata per diff                                                  |
+| `--includeReplayIds`             | boolean | `false`          | Add `baseReplayId` / `headReplayId` columns                                                                                  |
+| `--includeMismatchFraction`      | boolean | `false`          | Add a `mismatchFraction` column (fraction of pixels that differ between before/after)                                        |
+| `--includeDomDiffIds`            | boolean | `false`          | Add a `domDiffIds` column (one ID per distinct structural DOM change)                                                        |
+| `--orderByReplayDiffs`           | boolean | `false`          | Order by replay diff instead of global priority                                                                              |
+| `--counts`                       | boolean | `false`          | Print aggregate totals only (replays, differences, review-decision breakdown); cannot be combined with the list/filter flags |
+| `--dontWaitForTestRunToComplete` | boolean | `false`          | Report an in-progress run and exit immediately instead of waiting                                                            |
 
 `--includeReviewDecisions` remains available as a deprecated alias for `--includeReviews`.
 
-The `--only*` flags (`--onlyUnreviewed`, `--onlyRejected`, `--onlyWithComments`) are **additive (OR'd), not a narrowing combination** — passing more than one widens the output to their union (e.g. rejected diffs *plus* diffs with comments, not the intersection), rather than narrowing to diffs matching all of them.
+The `--only*` flags (`--onlyUnreviewed`, `--onlyRejected`, `--onlyWithComments`) are **additive (OR'd), not a narrowing combination** — passing more than one widens the output to their union (e.g. rejected diffs _plus_ diffs with comments, not the intersection), rather than narrowing to diffs matching all of them.
 
 The `decision` values are `accepted`, `rejected`, `ignored`, and `unreviewed` — there's no separate agent bucket: an agent's `reject-diff` (see below) writes a real `rejected` decision, indistinguishable from a human's at this level, and blocks the check identically. `--counts`' `numRejected` is this same unified count. An agent can only ever write `rejected` — there's no agent-facing way to write `accepted`/`ignored`, so `--onlyUnreviewed` is unaffected by agent activity.
 
@@ -114,10 +114,10 @@ get_diff_comments(replayDiffId="<id>", screenshotName="<name>")
 
 **Purpose:** Get open review comments for one screenshot diff, oldest first, with each comment's replies nested oldest first. The non-JSON output is a flattened TSV table (`id`, `replyToCommentId`, `author`, `isAgentAuthored`, `text`, `x`, `y`) with each comment immediately followed by its replies; `replyToCommentId` is TSV-only (blank for top-level comments, no JSON/MCP equivalent) so a reply row can be linked back to its parent, and a reply's `x`/`y` repeat the parent's since replies don't carry their own coordinates. `isAgentAuthored` says whether an agent wrote the comment: a comment written with a project token has no `author` to identify it, so this is the only thing distinguishing an agent's from a human's. Unavailable optional fields are blank in TSV and omitted from JSON/MCP output. `text` is JSON-quoted (the only column that is) so multiline/tabbed comment bodies stay on one row; `x`/`y` are formatted to 5 decimal places. `--includeResolved` also returns resolved comments and adds `isResolved`.
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--replayDiffId` | string | Replay diff from `test-run-diffs` (required) |
-| `--screenshotName` | string | Screenshot name from `test-run-diffs` (required) |
+| Option              | Type    | Description                                                       |
+| ------------------- | ------- | ----------------------------------------------------------------- |
+| `--replayDiffId`    | string  | Replay diff from `test-run-diffs` (required)                      |
+| `--screenshotName`  | string  | Screenshot name from `test-run-diffs` (required)                  |
 | `--includeResolved` | boolean | Include resolved comments and add `isResolved` (default: `false`) |
 
 ## agent reject-diff / agent ignore-diff
@@ -139,7 +139,7 @@ ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..
 
 The test run must belong to a pull request, or be a custom-trigger run — the run you triggered yourself, where the decision is recorded against the run itself. A run that's neither (a plain push or crawler run) has nowhere to record a decision, and the call is rejected.
 
-**Every call posts a new comment**, same as `create-diff-comment` — including a `reject-diff` repeating a verdict the diff already carries. That repeat appends no second decision (the verdict already stands), but it still records its own reason and coordinates and returns that comment's `id`, so a retry after a dropped connection is safe for the decision while leaving an extra comment on the thread. A `reject-diff` that *changes* the standing verdict resolves the comment behind the decision it replaces.
+**Every call posts a new comment**, same as `create-diff-comment` — including a `reject-diff` repeating a verdict the diff already carries. That repeat appends no second decision (the verdict already stands), but it still records its own reason and coordinates and returns that comment's `id`, so a retry after a dropped connection is safe for the decision while leaving an extra comment on the thread. A `reject-diff` that _changes_ the standing verdict resolves the comment behind the decision it replaces.
 
 | Option             | Type   | Description                                            |
 | ------------------ | ------ | ------------------------------------------------------ |
@@ -178,10 +178,10 @@ get_image_urls(replayDiffId="<id>", screenshotName="<name>")
 
 **Purpose:** Get the images of a screenshot diff. `image-urls` prints the outcome plus a signed URL per image (`before` / `after` / `diffImage`); `image-files` downloads them under `~/.meticulous/agent-images/` and prints the local paths instead.
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--replayDiffId` | string | Replay diff the screenshot belongs to (required) |
-| `--screenshotName` | string | Screenshot name (required) |
+| Option             | Type   | Description                                      |
+| ------------------ | ------ | ------------------------------------------------ |
+| `--replayDiffId`   | string | Replay diff the screenshot belongs to (required) |
+| `--screenshotName` | string | Screenshot name (required)                       |
 
 ## agent dom-diff
 
@@ -195,11 +195,11 @@ get_dom_diff(replayDiffId="<id>", screenshotName="<name>")
 
 **Purpose:** Unified-diff-style DOM diff for a screenshot diff, one hunk per change.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--replayDiffId` | string | — | Replay diff (required) |
-| `--screenshotName` | string | — | Screenshot name (required) |
-| `--context` | number \| `full` | `3` | Context lines around each hunk (`0` for none, `full` for a single full-file diff) |
+| Option             | Type             | Default | Description                                                                       |
+| ------------------ | ---------------- | ------- | --------------------------------------------------------------------------------- |
+| `--replayDiffId`   | string           | —       | Replay diff (required)                                                            |
+| `--screenshotName` | string           | —       | Screenshot name (required)                                                        |
+| `--context`        | number \| `full` | `3`     | Context lines around each hunk (`0` for none, `full` for a single full-file diff) |
 
 ## agent timeline-diff
 
@@ -213,8 +213,8 @@ get_timeline_diff(replayDiffId="<id>")
 
 **Purpose:** Timeline event diffs for a replay diff. Outputs a TSV table (`diff`, `timeMs`, `event`, `description`). Useful for diagnosing why a screenshot diff occurred (failed requests, redirects, timing).
 
-| Option | Type | Description |
-|--------|------|-------------|
+| Option           | Type   | Description            |
+| ---------------- | ------ | ---------------------- |
 | `--replayDiffId` | string | Replay diff (required) |
 
 ## agent test-run-check
@@ -237,15 +237,15 @@ A report result is `{ status: 'processing' }` while results have not been report
 
 `--availableIds` (MCP: `get_test_run_check_available_ids`) never waits for the test run or its checks to finish, unlike fetching a report — it returns whatever check IDs have reported results so far. An empty list shortly after triggering a run can mean the checks simply haven't reported yet rather than that none exist, so retry for a minute or so (the same budget a report fetch gives itself) before concluding the run has no checks.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--testRunId` | string | — | Target run explicitly (else resolved from `--commitSha`, else git HEAD) |
-| `--commitSha` | string | current git HEAD | Resolve the latest run for this commit |
-| `--project` | string | default project | One-off override (id, `org/proj`, or `proj`); cannot be combined with `--testRunId` |
-| `--checkType` | string | `builtin` | `builtin` for a Meticulous-provided check, or `custom` for a customer-reported check |
-| `--checkId` | string | — | The check ID; required unless `--availableIds` is set. Use `--availableIds` to discover it |
-| `--availableIds` | boolean | `false` | List the check IDs that have reported results for the run, instead of fetching a report. Cannot be combined with `--checkId`, `--checkType`, or `--dontWaitForTestRunToComplete` |
-| `--dontWaitForTestRunToComplete` | boolean | `false` | Report an in-progress run and exit immediately instead of waiting (report mode only) |
+| Option                           | Type    | Default          | Description                                                                                                                                                                      |
+| -------------------------------- | ------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--testRunId`                    | string  | —                | Target run explicitly (else resolved from `--commitSha`, else git HEAD)                                                                                                          |
+| `--commitSha`                    | string  | current git HEAD | Resolve the latest run for this commit                                                                                                                                           |
+| `--project`                      | string  | default project  | One-off override (id, `org/proj`, or `proj`); cannot be combined with `--testRunId`                                                                                              |
+| `--checkType`                    | string  | `builtin`        | `builtin` for a Meticulous-provided check, or `custom` for a customer-reported check                                                                                             |
+| `--checkId`                      | string  | —                | The check ID; required unless `--availableIds` is set. Use `--availableIds` to discover it                                                                                       |
+| `--availableIds`                 | boolean | `false`          | List the check IDs that have reported results for the run, instead of fetching a report. Cannot be combined with `--checkId`, `--checkType`, or `--dontWaitForTestRunToComplete` |
+| `--dontWaitForTestRunToComplete` | boolean | `false`          | Report an in-progress run and exit immediately instead of waiting (report mode only)                                                                                             |
 
 On MCP, `get_test_run_check` does not poll internally — poll it yourself every 10s until `status` is `complete` or `failed` (final — no retry).
 
@@ -265,18 +265,18 @@ get_replay_js_coverage(replayId="<id>")
 
 **Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, a combined set of runs, or a project's latest successful run. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--testRunId` / `--commitSha` | string | Coverage for a test run (defaults to the current git HEAD) |
-| `--latestForProject` | boolean | Coverage for the project's preferred latest successful test run (the same run the webapp's project coverage view uses); mutually exclusive with the other run-selector options |
-| `--replayId` | string | Coverage for a single replay |
-| `--screenshotName` | string | Restrict to a single screenshot of the replay |
-| `--headPlusTestRunIds` / `--testRunIds` | string | Comma-separated run IDs to union coverage across (same project + commit) |
-| `--globFilter` | string | Only include files matching the glob |
-| `--includeAllFiles` | boolean | Include files with no coverage too |
-| `--prDiffOnly` | boolean | Restrict to files changed in the PR (test-run queries only) |
-| `--includeExecutableRanges` / `--includeUncoveredRanges` / `--includeCoveragePercentage` | boolean | Add richer per-file coverage columns |
-| `--dontWaitForTestRunToComplete` | boolean | Report an in-progress run and exit immediately instead of waiting |
+| Option                                                                                   | Type    | Description                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--testRunId` / `--commitSha`                                                            | string  | Coverage for a test run (defaults to the current git HEAD)                                                                                                                     |
+| `--latestForProject`                                                                     | boolean | Coverage for the project's preferred latest successful test run (the same run the webapp's project coverage view uses); mutually exclusive with the other run-selector options |
+| `--replayId`                                                                             | string  | Coverage for a single replay                                                                                                                                                   |
+| `--screenshotName`                                                                       | string  | Restrict to a single screenshot of the replay                                                                                                                                  |
+| `--headPlusTestRunIds` / `--testRunIds`                                                  | string  | Comma-separated run IDs to union coverage across (same project + commit)                                                                                                       |
+| `--globFilter`                                                                           | string  | Only include files matching the glob                                                                                                                                           |
+| `--includeAllFiles`                                                                      | boolean | Include files with no coverage too                                                                                                                                             |
+| `--prDiffOnly`                                                                           | boolean | Restrict to files changed in the PR (test-run queries only)                                                                                                                    |
+| `--includeExecutableRanges` / `--includeUncoveredRanges` / `--includeCoveragePercentage` | boolean | Add richer per-file coverage columns                                                                                                                                           |
+| `--dontWaitForTestRunToComplete`                                                         | boolean | Report an in-progress run and exit immediately instead of waiting                                                                                                              |
 
 ## agent js-coverage-diff
 
@@ -302,19 +302,19 @@ get_sessions()
 
 **Purpose:** List a project's most recently created sessions, newest first (default: 100). Useful for finding the ID of a session just recorded. Outputs a TSV table (`id`, `createdAt`, `recordedAt`, `recordedBy`, `status`, plus requested columns).
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--project` | string | default project | One-off override (id, `org/proj`, or `proj`) |
-| `--createdSince` / `--createdUntil` | string | — | ISO-8601 date/time bounds on creation time |
-| `--recordedSince` / `--recordedUntil` | string | — | ISO-8601 date/time bounds on recording time |
-| `--recordedBy` | string | — | Filter by the user who recorded the session |
-| `--excludeSyntheticSessions` | boolean | `false` | Drop synthetic sessions (also drops the `status` column) |
-| `--visitedUrlFilter` | string | — | Glob over visited URLs (only `*` is a wildcard), e.g. `*/checkout*` |
-| `--includeStartUrl` / `--includeAbandonedReason` | boolean | `false` | Add extra columns |
-| `--includeNumberUserEvents` / `--includeNumberUrlsVisited` | boolean | `false` | Add activity-count columns |
-| `--includeDurationSeconds` | boolean | `false` | Add a `durationSeconds` column (empty when a duration couldn't be computed) |
-| `--limit` | number | `100` | 1–1000 |
-| `--offset` | number | `0` | — |
+| Option                                                     | Type    | Default         | Description                                                                 |
+| ---------------------------------------------------------- | ------- | --------------- | --------------------------------------------------------------------------- |
+| `--project`                                                | string  | default project | One-off override (id, `org/proj`, or `proj`)                                |
+| `--createdSince` / `--createdUntil`                        | string  | —               | ISO-8601 date/time bounds on creation time                                  |
+| `--recordedSince` / `--recordedUntil`                      | string  | —               | ISO-8601 date/time bounds on recording time                                 |
+| `--recordedBy`                                             | string  | —               | Filter by the user who recorded the session                                 |
+| `--excludeSyntheticSessions`                               | boolean | `false`         | Drop synthetic sessions (also drops the `status` column)                    |
+| `--visitedUrlFilter`                                       | string  | —               | Glob over visited URLs (only `*` is a wildcard), e.g. `*/checkout*`         |
+| `--includeStartUrl` / `--includeAbandonedReason`           | boolean | `false`         | Add extra columns                                                           |
+| `--includeNumberUserEvents` / `--includeNumberUrlsVisited` | boolean | `false`         | Add activity-count columns                                                  |
+| `--includeDurationSeconds`                                 | boolean | `false`         | Add a `durationSeconds` column (empty when a duration couldn't be computed) |
+| `--limit`                                                  | number  | `100`           | 1–1000                                                                      |
+| `--offset`                                                 | number  | `0`             | —                                                                           |
 
 ---
 
@@ -333,15 +333,15 @@ register_asset_build(uploadId="<id>")      # or register_container_build(uploadI
 
 **Purpose:** Upload a build and register a reusable deployment **without** triggering a run. Outputs the `deploymentId`. The commit defaults to the local git HEAD (a dirty working tree is captured as an ephemeral commit; untracked files are rejected). See the `meticulous-test` or `meticulous-zero-diff-task` skill for the full workflow.
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--appDirectory` | string | Build output directory (static-assets mode) |
-| `--appZip` | string | Zipped build, as an alternative to `--appDirectory` |
-| `--localImageTag` | string | Local Docker image tag (container mode) |
-| `--containerPort` / `--containerEnv` / `--containerHealthCheckEndpoint` | — | Container runtime configuration |
-| `--rewrites` | string | Static-asset rewrite rules |
-| `--commitSha` | string | Override the commit the build is registered against |
-| `--dryRun` | boolean | Print what would be uploaded without doing it |
+| Option                                                                  | Type    | Description                                         |
+| ----------------------------------------------------------------------- | ------- | --------------------------------------------------- |
+| `--appDirectory`                                                        | string  | Build output directory (static-assets mode)         |
+| `--appZip`                                                              | string  | Zipped build, as an alternative to `--appDirectory` |
+| `--localImageTag`                                                       | string  | Local Docker image tag (container mode)             |
+| `--containerPort` / `--containerEnv` / `--containerHealthCheckEndpoint` | —       | Container runtime configuration                     |
+| `--rewrites`                                                            | string  | Static-asset rewrite rules                          |
+| `--commitSha`                                                           | string  | Override the commit the build is registered against |
+| `--dryRun`                                                              | boolean | Print what would be uploaded without doing it       |
 
 On MCP, `commitSha` is never inferred — always pass your local commit explicitly (e.g. `git stash create` for a dirty tree, since untracked files are still excluded).
 
@@ -357,16 +357,16 @@ trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 
 **Purpose:** Trigger a test run against a deployment from `agent upload-build`, comparing against a base. Outputs the `testRunId`. A base is required (auto-inferred from the repo, or set via `--baseSha`). Omit `--deploymentId` to reuse the most recent deployment for the local HEAD commit (requires a clean working tree). See the `meticulous-test` or `meticulous-zero-diff-task` skill.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--deploymentId` | string | latest for HEAD | Deployment to run against |
-| `--commitSha` | string | current git HEAD | Resolve the most recent deployment for this commit |
-| `--baseSha` | string | inferred merge-base | Base commit to compare against |
-| `--gitDiffOutput` | string | inferred | Explicit git diff, paired with `--baseSha` |
-| `--sessionIds` | string | project golden set | Comma-separated session IDs to replay for both base and head |
-| `--maxDurationSeconds` | number | — | Cap the run's duration |
-| `--dontWaitForTestRunToComplete` | boolean | `false` | Return as soon as the run is triggered |
-| `--dryRun` | boolean | `false` | Print what would be triggered without doing it |
+| Option                           | Type    | Default             | Description                                                  |
+| -------------------------------- | ------- | ------------------- | ------------------------------------------------------------ |
+| `--deploymentId`                 | string  | latest for HEAD     | Deployment to run against                                    |
+| `--commitSha`                    | string  | current git HEAD    | Resolve the most recent deployment for this commit           |
+| `--baseSha`                      | string  | inferred merge-base | Base commit to compare against                               |
+| `--gitDiffOutput`                | string  | inferred            | Explicit git diff, paired with `--baseSha`                   |
+| `--sessionIds`                   | string  | project golden set  | Comma-separated session IDs to replay for both base and head |
+| `--maxDurationSeconds`           | number  | —                   | Cap the run's duration                                       |
+| `--dontWaitForTestRunToComplete` | boolean | `false`             | Return as soon as the run is triggered                       |
+| `--dryRun`                       | boolean | `false`             | Print what would be triggered without doing it               |
 
 `deploymentId` on MCP comes from `register_asset_build`/`register_container_build`. `baseSha`/`gitDiffOutput` are never inferred on MCP — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly.
 
@@ -382,12 +382,12 @@ submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hinde
 
 **Purpose:** Submit free-form feedback about Meticulous to the Meticulous team — e.g. whether it helped catch or debug a problem, what was confusing, or what information would have made your task easier. Outputs the `feedbackId`.
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--message` | string | **Required.** The feedback itself: one or two sentences on whether Meticulous helped, what was missing or confusing, and what would have made the task easier |
-| `--outcome` | string | `helped`, `neutral`, or `hindered` |
-| `--testRunId` | string | The test run the feedback relates to, if any |
-| `--skill` | string | The agentic skill or workflow being followed, e.g. `meticulous-review` |
-| `--agentName` | string | The agent product submitting the feedback, e.g. `claude-code` |
-| `--agentModel` | string | The underlying model, e.g. `claude-sonnet-5` |
-| `--project` | string | One-off project override for this call |
+| Option         | Type   | Description                                                                                                                                                   |
+| -------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--message`    | string | **Required.** The feedback itself: one or two sentences on whether Meticulous helped, what was missing or confusing, and what would have made the task easier |
+| `--outcome`    | string | `helped`, `neutral`, or `hindered`                                                                                                                            |
+| `--testRunId`  | string | The test run the feedback relates to, if any                                                                                                                  |
+| `--skill`      | string | The agentic skill or workflow being followed, e.g. `meticulous-review`                                                                                        |
+| `--agentName`  | string | The agent product submitting the feedback, e.g. `claude-code`                                                                                                 |
+| `--agentModel` | string | The underlying model, e.g. `claude-sonnet-5`                                                                                                                  |
+| `--project`    | string | One-off project override for this call                                                                                                                        |

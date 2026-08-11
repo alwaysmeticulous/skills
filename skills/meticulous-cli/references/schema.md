@@ -8,8 +8,8 @@ meticulous schema [command..]
 
 ## Options
 
-| Option | Type | Description |
-|--------|------|-------------|
+| Option    | Type                  | Description                                                         |
+| --------- | --------------------- | ------------------------------------------------------------------- |
 | `command` | positional (variadic) | Zero or more command path segments to drill into a specific command |
 
 ## Output Format

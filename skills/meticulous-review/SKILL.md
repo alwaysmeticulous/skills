@@ -12,7 +12,7 @@ This skill treats you as a **reviewer, not the implementer** — even if you did
 
 ## Step 0 -- Establish what's expected
 
-Before looking at any diff, work out what visual change this PR is *supposed* to produce:
+Before looking at any diff, work out what visual change this PR is _supposed_ to produce:
 
 - **If you already have full context** (same conversation that implemented the change, or the user just described the task), use that.
 - **Otherwise** — fetch the PR description (e.g. `gh pr view <number> --json title,body` for GitHub) and pull out a brief bullet-point summary of any visual changes it calls out as expected.
@@ -92,7 +92,7 @@ TSV columns: `diff` (` ` identical, `-` removed, `+` added, `!` changed), `timeM
 
 For each representative screenshot, compare the diff image and DOM diff against Step 0's expectations:
 
-- **Expected** — matches one of Step 0's expected changes (or, with full implementation context, is clearly a desired outcome). Check the diff actually looks like *that* change and nothing more — a diff can be expected in kind but still carry an extra, unrelated regression bundled into the same screenshot. Nothing to flag.
+- **Expected** — matches one of Step 0's expected changes (or, with full implementation context, is clearly a desired outcome). Check the diff actually looks like _that_ change and nothing more — a diff can be expected in kind but still carry an extra, unrelated regression bundled into the same screenshot. Nothing to flag.
 - **Unintended** — not accounted for by Step 0. Use the timeline to rule out failed requests, redirects, or other anomalies, then flag it:
   - **Potential regression** (a real side effect, or otherwise clearly wrong) → **reject**.
   - **Likely flake / unrelated noise** (a flaky timestamp, non-determinism, an infra blip) → **ignore**.
