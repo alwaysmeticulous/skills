@@ -27,9 +27,9 @@ meticulous agent upload-build --appDirectory <path-to-build>     # assets
 meticulous agent upload-build --localImageTag <image-tag>        # container
 
 # MCP (not 1:1 — request an upload URL, upload the artifact yourself, then register it)
-request_asset_upload()      # or request_container_upload()
+request_asset_upload(size=<zipByteSize>)      # or request_container_upload() — no required args
 # ... upload the zip/image to the returned URL/registry yourself ...
-register_asset_build(uploadId="<id>")      # or register_container_build(uploadId="<id>")
+register_asset_build(uploadId="<id>", commitSha="<sha>")      # or register_container_build(uploadId="<id>", commitSha="<sha>")
 ```
 
 - `--appDirectory` points to the build output directory (e.g. a `dist/` subfolder); `--localImageTag` is the local Docker image tag. The build mode is auto-detected.
