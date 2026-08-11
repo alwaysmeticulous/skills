@@ -17,7 +17,7 @@ This skill assumes the review has already happened — a user (or the `meticulou
 meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeReviews
 
 # MCP (git context is never inferred — pass a commit or test run explicitly)
-get_test_run_diffs(onlyRejected=true, onlyWithComments=true, includeReviews=true, testRunId="<id>")
+get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
 ```
 
 **Important — these `--only*` flags are additive (OR'd):** passing both `--onlyRejected` and `--onlyWithComments` returns every diff that's rejected, has an open comment, or both — not just the intersection — since a comment on a diff that wasn't formally rejected may still contain an instruction worth acting on. `--includeAllDiffs` is implied, so this spans the full run rather than just the selected subset; `--includeReviews` adds `decision`/`openComments` columns so you can tell which case each row is.
