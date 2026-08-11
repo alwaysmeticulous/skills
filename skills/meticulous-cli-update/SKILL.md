@@ -19,7 +19,7 @@ Full setup instructions — installing the CLI, connecting the MCP server, and i
 This skill normally runs as a sub-step of another Meticulous skill. The install/update commands below (Steps 1, 3, and 5) are security-sensitive — they install packages and reach the network — so treat them as **best-effort and non-blocking**:
 
 - You generally can't tell in advance whether a command is whitelisted. If it's whitelisted it runs silently; if not, attempting it surfaces a permission prompt. Either outcome is fine — let that be how you find out.
-- **If a command needs permission you don't have** (a prompt appears, or the user declines it), treat that as the signal to *recommend rather than force*. Tell the user it's recommended to do XYZ — e.g. "It's recommended to update the Meticulous CLI by running `npm install --global @alwaysmeticulous/cli@latest`" — and move on. A declined prompt is **not** a failure; it just means "do it later."
+- **If a command needs permission you don't have** (a prompt appears, or the user declines it), treat that as the signal to _recommend rather than force_. Tell the user it's recommended to do XYZ — e.g. "It's recommended to update the Meticulous CLI by running `npm install --global @alwaysmeticulous/cli@latest`" — and move on. A declined prompt is **not** a failure; it just means "do it later."
 - **If the user doesn't want to run it now, continue anyway.** Do not stop the workflow; carry on with the remaining steps and then return to the calling skill. The only hard requirement is that the `meticulous` command exists at all (Step 1) — if it's genuinely not installed and the user declines to install it, no Meticulous skill can proceed, so stop there.
 
 The read-only checks (`meticulous --version`, `npm view …`, `meticulous auth whoami`) are safe to run directly.
@@ -51,6 +51,7 @@ If the installed version already matches the latest, skip to Step 4.
 Otherwise, update according to how the CLI is installed (best-effort, see the note above — if updating isn't whitelisted, recommend the user run the appropriate command and continue regardless):
 
 - **Globally installed** (typical — `which meticulous` resolves to a path outside the current project):
+
   ```bash
   npm install --global @alwaysmeticulous/cli@latest
   ```

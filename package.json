@@ -1,0 +1,14 @@
+{
+  "name": "@alwaysmeticulous/skills",
+  "private": true,
+  "description": "Agent skills for using Meticulous",
+  "license": "ISC",
+  "scripts": {
+    "format": "oxfmt",
+    "check-format": "oxfmt --check"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.41.0"
+  },
+  "packageManager": "pnpm@10.33.4"
+}

@@ -1,14 +1,14 @@
 {
-    "name": "meticulous",
-    "owner": {
-        "name": "Meticulous",
-        "url": "https://github.com/alwaysmeticulous/skills"
-    },
-    "plugins": [
-        {
-            "name": "meticulous",
-            "source": "./",
-            "description": "Skills for the Meticulous UI testing platform"
-        }
-    ]
+  "name": "meticulous",
+  "owner": {
+    "name": "Meticulous",
+    "url": "https://github.com/alwaysmeticulous/skills"
+  },
+  "plugins": [
+    {
+      "name": "meticulous",
+      "source": "./",
+      "description": "Skills for the Meticulous UI testing platform"
+    }
+  ]
 }

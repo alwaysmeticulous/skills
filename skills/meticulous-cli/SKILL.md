@@ -20,18 +20,19 @@ The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill i
 
 ## Command Groups
 
-| Command | Purpose |
-|---------|---------|
-| `agent` | Read, analyse, and trigger test runs — the agent-facing commands, also exposed on the MCP server |
-| `auth` | Authenticate with Meticulous (login, whoami, logout, project selection) |
-| `debug` | Set up AI-ready debug workspaces for investigating replay diffs and replays |
-| `download` | Download sessions, replays, and test runs locally |
-| `local` | Find sessions relevant to the current branch's code changes |
-| `project` | Inspect the project you're authenticated against |
-| `simulate` / `replay` | Replay a recorded session against a URL |
-| `schema` | Output the CLI command schema as JSON (for agent/programmatic use) |
+| Command               | Purpose                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| `agent`               | Read, analyse, and trigger test runs — the agent-facing commands, also exposed on the MCP server |
+| `auth`                | Authenticate with Meticulous (login, whoami, logout, project selection)                          |
+| `debug`               | Set up AI-ready debug workspaces for investigating replay diffs and replays                      |
+| `download`            | Download sessions, replays, and test runs locally                                                |
+| `local`               | Find sessions relevant to the current branch's code changes                                      |
+| `project`             | Inspect the project you're authenticated against                                                 |
+| `simulate` / `replay` | Replay a recorded session against a URL                                                          |
+| `schema`              | Output the CLI command schema as JSON (for agent/programmatic use)                               |
 
 See the reference for each group for full option details:
+
 - [references/agent.md](references/agent.md)
 - [references/auth.md](references/auth.md)
 - [references/debug.md](references/debug.md)
@@ -45,11 +46,11 @@ See the reference for each group for full option details:
 
 These options are accepted by every command:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--logLevel` | string | `info` | Log verbosity: `trace`, `debug`, `info`, `warn`, `error`, `silent` |
-| `--dataDir` | string | `~/.meticulous` | Directory where sessions, replays, and other data are stored |
-| `--jsonArgs` | string | — | Pass all options as a JSON string (useful for programmatic/agent invocation) |
+| Option       | Type   | Default         | Description                                                                  |
+| ------------ | ------ | --------------- | ---------------------------------------------------------------------------- |
+| `--logLevel` | string | `info`          | Log verbosity: `trace`, `debug`, `info`, `warn`, `error`, `silent`           |
+| `--dataDir`  | string | `~/.meticulous` | Directory where sessions, replays, and other data are stored                 |
+| `--jsonArgs` | string | —               | Pass all options as a JSON string (useful for programmatic/agent invocation) |
 
 `--rawJson` is a deprecated alias for `--jsonArgs`. `--dryRun` is **not** global — it is available only on the commands that perform actions (e.g. the `ci` / `agent` run-triggering and upload commands, and `simulate`); check the command's reference or `meticulous schema <command>`.
 
