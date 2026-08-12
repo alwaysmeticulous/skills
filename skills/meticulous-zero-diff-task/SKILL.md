@@ -30,9 +30,9 @@ meticulous agent upload-build --localImageTag <image-tag>        # container
 meticulous agent trigger-test-run --deploymentId <deploymentId>
 
 # MCP (upload is not 1:1 — request an upload URL, upload the artifact yourself, then register it)
-request_asset_upload()      # or request_container_upload()
+request_asset_upload(size=<zipByteSize>)      # or request_container_upload() — no required args
 # ... upload the zip/image to the returned URL/registry yourself ...
-register_asset_build(uploadId="<id>")      # or register_container_build(uploadId="<id>")
+register_asset_build(uploadId="<id>", commitSha="<sha>")      # or register_container_build(uploadId="<id>", commitSha="<sha>")
 trigger_test_run(deploymentId="<deploymentId>", baseSha="<sha>")
 ```
 
@@ -95,8 +95,9 @@ Once CI has triggered its own Meticulous test run for the pushed commit, confirm
 # CLI (resolves from local git HEAD — already the pushed commit)
 meticulous agent test-run-diffs
 
-# MCP (git context is never inferred — pass the local HEAD commit explicitly)
-get_test_run_diffs(commitSha="<sha>")
+# MCP (git context is never inferred — resolve the testRunId from the local HEAD commit first)
+get_test_run_for_commit(commitSha="<sha>")
+get_test_run_diffs(testRunId="<id>")
 ```
 
 If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.

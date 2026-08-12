@@ -26,8 +26,9 @@ Run from the local checkout to resolve the test run from the current commit's gi
 # CLI (infers the run from local git HEAD)
 meticulous agent test-run-diffs
 
-# MCP (git context is never inferred — pass a commit or test run explicitly)
-get_test_run_diffs(commitSha="<sha>")
+# MCP (git context is never inferred — resolve the testRunId from a commit first)
+get_test_run_for_commit(commitSha="<sha>")
+get_test_run_diffs(testRunId="<id>")
 ```
 
 Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, priority-ordered subset of real visual differences; work through them top to bottom. To target a run explicitly instead of resolving from HEAD, pass `--testRunId <id>` or `--commitSha <sha>`. The CLI blocks until the run finishes by default (pass `--dontWaitForTestRunToComplete` to instead report an in-progress run and exit immediately); MCP never blocks, so keep polling until `status` is `complete`/`failed`.

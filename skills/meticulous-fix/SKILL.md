@@ -101,9 +101,9 @@ Either way, move on to the next fix-target diff; report it at the end (see the f
    meticulous agent test-run-for-commit
    meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeReviews
 
-   # MCP (git context is never inferred — pass the local HEAD commit explicitly)
+   # MCP (git context is never inferred — resolve the testRunId from the local HEAD commit first)
    get_test_run_for_commit(commitSha="<sha>")
-   get_test_run_diffs(commitSha="<sha>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
+   get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
    ```
 
 If a diff you believed you fixed is still showing up (decisions/comments carry forward from the compared run), your fix didn't address the root cause; go back to Step 3/4 for that one, then repeat this step.

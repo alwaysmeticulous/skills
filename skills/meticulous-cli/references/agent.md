@@ -326,9 +326,9 @@ meticulous agent upload-build --appDirectory=<path>     # static assets
 meticulous agent upload-build --localImageTag=<tag>     # container image
 
 # MCP (not 1:1 — request an upload URL, upload the artifact yourself, then register it)
-request_asset_upload()      # or request_container_upload()
+request_asset_upload(size=<zipByteSize>)      # or request_container_upload() — no required args
 # ... upload the zip/image to the returned URL/registry yourself ...
-register_asset_build(uploadId="<id>")      # or register_container_build(uploadId="<id>")
+register_asset_build(uploadId="<id>", commitSha="<sha>")      # or register_container_build(uploadId="<id>", commitSha="<sha>")
 ```
 
 **Purpose:** Upload a build and register a reusable deployment **without** triggering a run. Outputs the `deploymentId`. The commit defaults to the local git HEAD (a dirty working tree is captured as an ephemeral commit; untracked files are rejected). See the `meticulous-test` or `meticulous-zero-diff-task` skill for the full workflow.

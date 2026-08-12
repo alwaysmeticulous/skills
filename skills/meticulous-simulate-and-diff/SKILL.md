@@ -121,16 +121,6 @@ Present this in whatever format fits the current context (conversational answer,
 The comparison URL logged to stdout is always worth surfacing, as it lets a human quickly verify the diff visually:
 `https://app.meticulous.ai/.../simulations/<baseReplayId>/compare-to/<headReplayId>`
 
-## Step 6 — Report feedback to Meticulous
-
-As the last step, after reporting the result (no regressions or summarized findings), submit one brief feedback note to the Meticulous team: did the simulation and diffs help you verify the change, was anything confusing, and what information would have made the task easier?
-
-```bash
-meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<helped|neutral|hindered> --skill=meticulous-simulate-and-diff
-```
-
-_MCP tool: `submit_feedback`._
-
 ## Notes
 
 - The pixel diff images at `~/.meticulous/replays/<replayDir>/diffs/<baseReplayId>/` can be opened directly for visual inspection.
