@@ -47,8 +47,11 @@ meticulous agent test-run-for-commit
 Keep the id it prints — Step 7 falls back to it. If it reports **"No test run
 found for commit …"**, stop and report that to the user; you cannot baseline
 without it. The most common cause is the CLI pointing at the wrong project, so
-suggest they check with `meticulous auth get-project` and, if needed,
-`meticulous auth set-project`.
+suggest they check with `meticulous auth get-project`. `meticulous auth
+set-project` only applies for OAuth tokens; API tokens are bound to one
+project (so `set-project` fails), and injected credentials leave no local
+token to select — in those cases the fix is a different credential, not
+`set-project`.
 
 ## Step 1 — Baseline coverage
 
@@ -217,9 +220,9 @@ window.__ev = [];
 - captured but `trusted: false` → it reached the page but will not be
   recorded; you are synthesising somewhere
 
-### Two ways an action records as nothing
+### Three ways an action records as nothing
 
-Both of these look like success in the browser, which is what makes them
+All three look like success in the browser, which is what makes them
 expensive — you find out from the coverage numbers, long after the fact.
 
 **Native `<select>`s.** Setting the value through a form-fill action, or
@@ -253,31 +256,22 @@ session targets UI that never opened — so coverage _drops_. Check the recorded
 event count looks like two press/release pairs, and treat any
 double-click-only feature as suspect until coverage confirms it.
 
-### A typed value inside a dropdown can replay as nothing
+### Some interactions may not survive agent-driven recording at all
 
-Unlike the three cases above, this one is invisible to the trusted-event
-probe — the session records real `beforeinput`/`input`/`keydown` events, and
-the live interaction visibly works (a filter chip appears, a view gets
-renamed). The handler gated behind that value just doesn't fire on replay:
-the affected files sit at _exactly_ their baseline percentage in Step 7's
-union, as if the interaction never happened, with no error and no visible
-sign anything is wrong.
+Occasionally an interaction records cleanly and visibly works live, but the
+handler it's meant to trigger never fires on replay — with no error, and the
+affected file sitting at _exactly_ its baseline percentage in Step 7's union.
+One case seen: typing a value into an input inside a dropdown's own
+portal-rendered content (a filter chip, a view rename behind a "..." menu).
+Plain clicks in the same portal, and the identical type-then-Enter sequence
+on an input in the main page tree, both replay fine — so this is specific to
+keyboard/text input inside a portal, not a driver issue.
 
-The pattern seen so far: it happens when the input lives inside a dropdown's
-own portal-rendered content (check the selector root in the session's event
-data, or just the dropdown's own `id` — e.g. `view-bar-main-filter-dropdown-id`,
-`view-picker`). The same type-then-Enter sequence replays fine when the input
-is part of the main page tree instead (a sidebar rename field, for example),
-and plain clicks inside the very same dropdown portals also replay fine — only
-keyboard/text-input events inside a portal are affected. Reproduced across
-both Playwright and `agent-browser`, so it is not driver-specific.
-
-Root cause isn't nailed down yet. Until it is, don't trust a typed-value
-target from the live interaction alone: filter values, a view rename behind a
-"..." menu, anything you type after opening a dropdown. Check Step 7's diff
-before reporting success, and if the file didn't move, re-record the same
-flow driving a field that's part of the main page tree if one exists (or
-report the target as unresolved rather than padding the list).
+Don't assume a typed-value target worked just because the live interaction
+did — check Step 7's diff. If a target only reproduces through this kind of
+interaction and won't move, that's a shortcoming of agent-driven recording
+for this flow: report it as unresolved and suggest a human drive that one
+flow manually, rather than continuing to pad the list with retries.
 
 ### `claude-in-chrome` specifics
 
@@ -325,8 +319,8 @@ something:
 
 ```bash
 meticulous agent sessions --limit 10 --excludeSyntheticSessions \
-  --includeAbandonedReason --includeDurationSeconds \
-  --includeNumberUserEvents --includeNumberUrlsVisited --includeStartUrl
+  --includeDurationSeconds --includeNumberUserEvents \
+  --includeNumberUrlsVisited --includeStartUrl --includeAbandonedReason
 ```
 
 Read the row you just produced:

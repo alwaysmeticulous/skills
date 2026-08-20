@@ -4,7 +4,7 @@ Read, analysis, and run-triggering commands designed for AI coding agents. They 
 
 All commands are also exposed as tools on the hosted **MCP server** (`https://app.meticulous.ai/api/mcp`) — an MCP-enabled client can call the `get_…` tool directly instead of shelling out. Each read tool takes broadly the same arguments and returns the same data as the CLI command's `--json` output, with differences inherent to a hosted endpoint with no access to your local repo or filesystem: **`commitSha`/`baseSha`/`gitDiffOutput` are never inferred — always compute and pass them explicitly** (e.g. `git rev-parse HEAD`, `git merge-base origin/main HEAD`), there are no output-format flags, and — for `image-files` — you get signed URLs rather than files downloaded to disk. The **MCP tool** column below gives the mapping.
 
-`upload-build`/`trigger-test-run` (the mutating commands) map to MCP tools too, but not 1:1 — the CLI's single `agent upload-build` call is split into a **request → (upload) → register** pair on MCP (`request_asset_upload`/`request_container_upload` then `register_asset_build`/`register_container_build`), and `trigger_test_run` **does not wait for the run to finish** (unlike the CLI, which blocks by default). No separate "is it done" check is needed to follow it, though: `get_test_run_diffs` already waits out an in-progress run internally (reporting `pending`/`processing` the whole time, same as it does while computing the diff summary itself), so just poll that one call. `get_test_run_diffs_counts` has no such wait — don't rely on it to detect completion, since on an in-progress run it returns whatever partial counts currently exist rather than telling you to wait. See the `meticulous-test` or `meticulous-zero-diff-task` skill for the CLI workflow; use `mcp-server.ts`/the in-app MCP docs for the exact MCP tool call sequence.
+`upload-build`/`trigger-test-run` (the mutating commands) map to MCP tools too, but not 1:1 — the CLI's single `agent upload-build` call is split into a **request → (upload) → register** pair on MCP (`request_asset_upload`/`request_container_upload` then `register_asset_build`/`register_container_build`), and `trigger_test_run` **does not wait for the run to finish** (unlike the CLI, which blocks by default). No separate "is it done" check is needed to follow it, though: `get_test_run_diffs` already waits out an in-progress run internally (reporting `pending`/`processing` the whole time, same as it does while computing the diff summary itself), so just poll that one call. `get_test_run_diffs_counts` has no such wait — don't rely on it to detect completion, since on an in-progress run it returns whatever partial counts currently exist rather than telling you to wait. See the `meticulous-test`, `meticulous-zero-diff-task`, or `meticulous-increase-coverage` skill for the CLI workflow; use `mcp-server.ts`/the in-app MCP docs for the exact MCP tool call sequence.
 
 ## Common options
 
@@ -16,7 +16,7 @@ Accepted by every `agent` command (in addition to the [global options](../SKILL.
 | `--json`     | boolean | `false` | Emit JSON on stdout instead of the default TSV/plain-text format               |
 | `--verbose`  | boolean | `false` | Print additional progress logs on stderr                                       |
 
-Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run-diffs`, `js-coverage`, `trigger-test-run`) also accept `--project <id | org/name | name>` — a one-off override of your default project for that call only (it does not change the stored default; see [`auth`](auth.md)).
+Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run-diffs`, `js-coverage`, `trigger-test-run`, `complete-base-run`) also accept `--project <id | org/name | name>` — a one-off override of your default project for that call only (it does not change the stored default; see [`auth`](auth.md)).
 
 ## Command → MCP tool overview
 
@@ -43,6 +43,7 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `sessions`                       | List a project's recently recorded sessions                                    | `get_sessions`                                                                                                                   |
 | `upload-build`                   | Upload a build, register a deployment                                          | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
 | `trigger-test-run`               | Trigger a run against a deployment                                             | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
+| `complete-base-run`              | Replay the sessions a base run has not run yet                                 | `complete_base_run` (returns once scheduled — does not wait for completion)                                                      |
 | `submit-feedback`                | Submit free-form feedback about Meticulous                                     | `submit_feedback`                                                                                                                |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
@@ -60,6 +61,8 @@ get_test_run_for_commit(commitSha="<sha>")
 ```
 
 **Purpose:** Look up the latest test run for a commit (defaults to the current git HEAD) and output the `testRunId`.
+
+A base run is one other test runs compare against rather than a run of its own — the usual outcome for a commit on your default branch. It has no diffs and no PR, so `test-run-diffs` and `test-run-check` reject it, and it replays its selected sessions on demand, so `js-coverage` works on it only once they have all replayed (see [`complete-base-run`](#agent-complete-base-run)).
 
 | Option                           | Type    | Default          | Description                                                       |
 | -------------------------------- | ------- | ---------------- | ----------------------------------------------------------------- |
@@ -265,6 +268,8 @@ get_replay_js_coverage(replayId="<id>")
 
 **Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, a combined set of runs, or a project's latest successful run. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
 
+A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its selected sessions on demand, so while any of them are still unreplayed its coverage understates the commit and this is refused, saying how many are missing. Either replay the rest with [`complete-base-run`](#agent-complete-base-run) and ask again, or pass `--latestForProject` for the project's overall coverage. A base run that has replayed its whole selected set answers normally.
+
 | Option                                                                                   | Type    | Description                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `--testRunId` / `--commitSha`                                                            | string  | Coverage for a test run (defaults to the current git HEAD)                                                                                                                     |
@@ -355,7 +360,7 @@ meticulous agent trigger-test-run [--deploymentId=<id>] [--baseSha=<sha>] [optio
 trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 ```
 
-**Purpose:** Trigger a test run against a deployment from `agent upload-build`, comparing against a base. Outputs the `testRunId`. A base is required (auto-inferred from the repo, or set via `--baseSha`). Omit `--deploymentId` to reuse the most recent deployment for the local HEAD commit (requires a clean working tree). See the `meticulous-test` or `meticulous-zero-diff-task` skill.
+**Purpose:** Trigger a test run against a deployment from `agent upload-build`, comparing against a base. Outputs the `testRunId`. A base is required (auto-inferred from the repo, or set via `--baseSha`). Omit `--deploymentId` to reuse the most recent deployment for the local HEAD commit (requires a clean working tree). See the `meticulous-test`, `meticulous-zero-diff-task`, or `meticulous-increase-coverage` skill.
 
 | Option                           | Type    | Default             | Description                                                  |
 | -------------------------------- | ------- | ------------------- | ------------------------------------------------------------ |
@@ -369,6 +374,26 @@ trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 | `--dryRun`                       | boolean | `false`             | Print what would be triggered without doing it               |
 
 `deploymentId` on MCP comes from `register_asset_build`/`register_container_build`. `baseSha`/`gitDiffOutput` are never inferred on MCP — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly.
+
+## agent complete-base-run
+
+```bash
+# CLI
+meticulous agent complete-base-run [--testRunId=<id> | --commitSha=<sha>] [options]
+
+# MCP (returns as soon as the replays are scheduled — poll get_test_run_for_commit for the run to finish)
+complete_base_run(testRunId="<id>")
+```
+
+**Purpose:** Replay the selected sessions a base run has not run yet, to complete its coverage information. A base run replays sessions on demand for whichever PRs compare against it, so it can sit at any fraction of the project's selected set, and [`js-coverage`](#agent-js-coverage) refuses it while any are missing. Outputs `testRunId`, `status`, `sessionsScheduled` and `configuredSessionCount`.
+
+This costs a full test run's replays, so reach for it when you want this commit's own coverage; `js-coverage --latestForProject` gives a project-level picture for free. `sessionsScheduled` is `0` when the run had already replayed everything — running it twice is a no-op, not an error. It fails for a run that is not a base run, or whose deployment was an ephemeral tunnel that is no longer reachable.
+
+| Option                           | Type    | Default          | Description                                                    |
+| -------------------------------- | ------- | ---------------- | -------------------------------------------------------------- |
+| `--testRunId`                    | string  | —                | The base run to complete                                       |
+| `--commitSha`                    | string  | current git HEAD | Complete the latest run for this commit instead                |
+| `--dontWaitForTestRunToComplete` | boolean | `false`          | Return once the replays are scheduled instead of awaiting them |
 
 ## agent submit-feedback
 
