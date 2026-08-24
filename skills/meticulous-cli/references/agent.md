@@ -62,7 +62,7 @@ get_test_run_for_commit(commitSha="<sha>")
 
 **Purpose:** Look up the latest test run for a commit (defaults to the current git HEAD) and output the `testRunId`.
 
-A base run is one other test runs compare against rather than a run of its own — the usual outcome for a commit on your default branch. It has no diffs and no PR, so `test-run-diffs` and `test-run-check` reject it, and it replays its selected sessions on demand, so `js-coverage` works on it only once they have all replayed (see [`complete-base-run`](#agent-complete-base-run)).
+A base run is one other test runs compare against rather than a run of its own — the usual outcome for a commit on your default branch. It has no diffs and no PR, so `test-run-diffs` and `test-run-check` reject it, and it replays its selected sessions on demand, so `js-coverage` works on it only once it has replayed everything it can (see [`complete-base-run`](#agent-complete-base-run)).
 
 | Option                           | Type    | Default          | Description                                                       |
 | -------------------------------- | ------- | ---------------- | ----------------------------------------------------------------- |
@@ -268,7 +268,7 @@ get_replay_js_coverage(replayId="<id>")
 
 **Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, a combined set of runs, or a project's latest successful run. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
 
-A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its selected sessions on demand, so while any of them are still unreplayed its coverage understates the commit and this is refused, saying how many are missing. Either replay the rest with [`complete-base-run`](#agent-complete-base-run) and ask again, or pass `--latestForProject` for the project's overall coverage. A base run that has replayed its whole selected set answers normally.
+A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its selected sessions on demand, so while any of them could still be replayed its coverage understates the commit and this is refused, saying how many are missing. Either replay the rest with [`complete-base-run`](#agent-complete-base-run) and ask again, or pass `--latestForProject` for the project's overall coverage. A run that has replayed everything it can answers normally — a small share of the set being permanently unreplayable (a chunk that finished without reporting some of its sessions) is tolerated rather than blocking the commit forever, and above that share the refusal says so and that completing the run cannot help.
 
 | Option                                                                                   | Type    | Description                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -381,13 +381,15 @@ trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 # CLI
 meticulous agent complete-base-run [--testRunId=<id> | --commitSha=<sha>] [options]
 
-# MCP (returns as soon as the replays are scheduled — poll get_test_run_for_commit for the run to finish)
+# MCP (returns as soon as the replays are scheduled — re-call it to poll progress)
 complete_base_run(testRunId="<id>")
 ```
 
-**Purpose:** Replay the selected sessions a base run has not run yet, to complete its coverage information. A base run replays sessions on demand for whichever PRs compare against it, so it can sit at any fraction of the project's selected set, and [`js-coverage`](#agent-js-coverage) refuses it while any are missing. Outputs `testRunId`, `status`, `sessionsScheduled` and `configuredSessionCount`.
+**Purpose:** Replay the selected sessions a base run has not run yet, so its coverage describes its commit. A base run replays sessions on demand for whichever PRs compare against it, so it can sit at any fraction of the project's selected set, and [`js-coverage`](#agent-js-coverage) refuses it while sessions are still missing. Outputs `testRunId`, `status`, `unexecutedSessionCount`, `unobtainableSessionCount`, `coverageServable`, `sessionsScheduled` and `configuredSessionCount`.
 
-This costs a full test run's replays, so reach for it when you want this commit's own coverage; `js-coverage --latestForProject` gives a project-level picture for free. `sessionsScheduled` is `0` when the run had already replayed everything — running it twice is a no-op, not an error. It fails for a run that is not a base run, or whose deployment was an ephemeral tunnel that is no longer reachable.
+`coverageServable` is the flag to watch. The CLI waits for it by default; MCP returns immediately, so re-call `complete_base_run` every so often until it is `true`, and only then ask for coverage again. Don't wait for `unexecutedSessionCount` to reach `0`: `unobtainableSessionCount` of those sessions can no longer be replayed at all — the chunks covering them finished without reporting a result — and coverage tolerates a small share of that rather than refusing the commit forever, so for some runs the count never reaches `0`. `sessionsScheduled` is `0` both when everything has replayed and when the remaining sessions are already covered by earlier work, so it is not a completion signal either.
+
+This costs a full test run's replays, so reach for it when you want this commit's own coverage; `js-coverage --latestForProject` gives a project-level picture for free. The operation is idempotent and retries sessions from chunks that concluded with `ExecutionError`. It fails for a run that is not a base run, whose whole-run status is `ExecutionError` or `Aborted`, or whose deployment was an ephemeral tunnel that is no longer reachable — and when the whole remainder is beyond recovering and too large to tolerate, it says so rather than waiting for work that will never happen.
 
 | Option                           | Type    | Default          | Description                                                    |
 | -------------------------------- | ------- | ---------------- | -------------------------------------------------------------- |
