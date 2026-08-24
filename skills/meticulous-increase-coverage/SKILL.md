@@ -67,9 +67,11 @@ run and the baseline to have executed the same commit.
 
 The base run's sessions often haven't all been replayed yet, which understates
 its coverage — if `js-coverage` says so, run `meticulous agent
-complete-base-run`, wait for it to report all sessions scheduled/replayed
-(it can take a while; check back or re-run rather than assuming it hung), then
-re-run `js-coverage`.
+complete-base-run` (it waits by default until nothing more can be scheduled;
+it can take a while, so check back or re-run rather than assuming it hung),
+then re-run `js-coverage`. Don't expect `unexecutedSessionCount` to always
+reach `0` — some sessions can be permanently unobtainable, and `js-coverage`
+tolerates a small share of those rather than refusing forever.
 
 ## Step 2 — Separate dead code from real targets
 
