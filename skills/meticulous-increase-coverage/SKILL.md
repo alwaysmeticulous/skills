@@ -65,6 +65,14 @@ check above passed), stop and report to the user. Do not work around it by
 baselining against some other commit's run: Step 7's union requires your new
 run and the baseline to have executed the same commit.
 
+The base run's sessions often haven't all been replayed yet, which understates
+its coverage — if `js-coverage` says so, run `meticulous agent
+complete-base-run` (it waits by default until nothing more can be scheduled;
+it can take a while, so check back or re-run rather than assuming it hung),
+then re-run `js-coverage`. Don't expect `unexecutedSessionCount` to always
+reach `0` — some sessions can be permanently unobtainable, and `js-coverage`
+tolerates a small share of those rather than refusing forever.
+
 ## Step 2 — Separate dead code from real targets
 
 You are looking for two different things in this file, and it helps to keep
@@ -78,7 +86,11 @@ them apart:
   40% usually means one path through it runs and the rest doesn't, and those
   partial files are often the cheapest wins: the module already loads, so a
   single extra interaction can light up a large block. Sort ascending by
-  percentage and work up from the bottom, rather than stopping at 0%.
+  percentage and work up from the bottom, rather than stopping at 0%. Some
+  0%/low files are gated behind a feature toggle that's off by default rather
+  than a UI path nobody's driven — check the toggle registry and the file's
+  gating condition before assuming it needs a brand-new flow, since flipping
+  the toggle on locally can turn a dead-looking file into an easy target.
 
 Start with the ignore candidates, since they shrink the list. Break the
 0%-coverage files down by top-level directory, so you are reasoning about
@@ -355,6 +367,11 @@ _later page load to the same origin_ — so a session's tail can be delayed
 until the next visit. Prefer navigating away over hard-closing the browser,
 and never judge a recording immediately.
 
+**Recording several targets in one sitting? Run this check after _each_ one**,
+not just once at the end. Checking only at the end makes it impossible to
+tell which action lost a session, and you'll have to re-drive all of them
+just to find out which one needs redoing.
+
 ## Step 5 — Session-time budget and close discipline
 
 - **Cloud replays cap at 5 minutes of session time.** Everything recorded
@@ -380,7 +397,11 @@ and never judge a recording immediately.
   starting its own, and tails frequently do not replay — so the page renders
   perfectly while you drive it and still contributes no coverage. Give each
   page you actually care about its own dwell time (~10s) before moving on,
-  and check in Step 6 that it shows up as a `startUrl` in its own right.
+  and check in Step 6 that it shows up as a `startUrl` in its own right. The
+  same caution applies to a plain `<form>` submit with no wired `onSubmit`
+  handler — it triggers a real browser reload rather than an SPA transition,
+  and can just as easily drop the just-recorded, unflushed session if you
+  navigate on immediately afterward.
 - **Recorder limits:** a 10-minute hard cap on tab-open time marks the whole
   session "abandoned"; uploads flush on a 5s interval — wait ~6-8s after the
   last interaction before closing the tab.
