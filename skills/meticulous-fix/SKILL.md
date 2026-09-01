@@ -115,7 +115,7 @@ Summarize the outcome, covering **every fix-target** diff from Step 1 (omit igno
 1. **Fixed**: which diffs were resolved, what the underlying code change was, and which comment(s) it addressed, if any.
 2. **Not fixed** (if any): which diffs couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. Note that you left this explanation as a reply/comment on the diff (Step 4) — don't just leave it in the report where only this conversation sees it. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.
 
-Post this report as a comment on the PR itself, in addition to delivering it here (e.g. `gh pr comment <number> --body "..."` for GitHub).
+Post this report as a comment on the PR itself, in addition to delivering it here (e.g. `gh pr comment <number> --body "..."` for GitHub, `glab mr note <id> --message "..."` for GitLab, or a `POST /2.0/repositories/{workspace}/{repo_slug}/pullrequests/{id}/comments` call with body `{"content": {"raw": "..."}}` for Bitbucket).
 
 ## Step 7 -- Report feedback to Meticulous
 

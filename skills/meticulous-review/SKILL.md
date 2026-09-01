@@ -15,7 +15,7 @@ This skill treats you as a **reviewer, not the implementer** — even if you did
 Before looking at any diff, work out what visual change this PR is _supposed_ to produce:
 
 - **If you already have full context** (same conversation that implemented the change, or the user just described the task), use that.
-- **Otherwise** — fetch the PR description (e.g. `gh pr view <number> --json title,body` for GitHub) and pull out a brief bullet-point summary of any visual changes it calls out as expected.
+- **Otherwise** — fetch the PR description (e.g. `gh pr view <number> --json title,body` for GitHub, `glab mr view <id> --output json --jq '{title,description}'` for GitLab, or `GET /2.0/repositories/{workspace}/{repo_slug}/pullrequests/{id}?fields=title,description` for Bitbucket) and pull out a brief bullet-point summary of any visual changes it calls out as expected.
 - If it doesn't mention any, note that explicitly — every diff below then gets extra scrutiny, since there's nothing on record it could be a known, accepted consequence of.
 
 ## Step 1 -- Get the replay diff summary
