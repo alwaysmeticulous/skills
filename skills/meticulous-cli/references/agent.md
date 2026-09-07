@@ -20,31 +20,31 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 
 ## Command → MCP tool overview
 
-| Command                          | Purpose                                                                        | MCP tool                                                                                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `test-run-for-commit`            | Look up the latest test run for a commit                                       | `get_test_run_for_commit`                                                                                                        |
-| `test-run-diffs`                 | List the screenshot diffs of a test run                                        | `get_test_run_diffs`                                                                                                             |
-| `test-run-diffs --counts`        | Aggregate diff/review totals only                                              | `get_test_run_diffs_counts`                                                                                                      |
-| `diff-comments`                  | Review comments for a screenshot diff                                          | `get_diff_comments`                                                                                                              |
-| `reject-diff`                    | Reject a screenshot diff (real, blocking decision) and comment why             | `reject_diff`                                                                                                                    |
-| `ignore-diff`                    | Comment that a screenshot diff looks like expected variation (decides nothing) | `ignore_diff`                                                                                                                    |
-| `create-diff-comment`            | Start a review comment thread                                                  | `create_diff_comment`                                                                                                            |
-| `reply-to-diff-comment`          | Reply to a review comment thread                                               | `reply_to_diff_comment`                                                                                                          |
-| `image-urls`                     | Signed URLs for a screenshot diff's images                                     | `get_image_urls`                                                                                                                 |
-| `image-files`                    | Download a screenshot diff's images to disk                                    | _(none — use `get_image_urls`)_                                                                                                  |
-| `dom-diff`                       | DOM diff for a screenshot diff                                                 | `get_dom_diff`                                                                                                                   |
-| `timeline-diff`                  | Timeline event diffs for a replay diff                                         | `get_timeline_diff`                                                                                                              |
-| `test-run-check`                 | Get the Markdown report for a non-visual check                                 | `get_test_run_check`                                                                                                             |
-| `test-run-check --availableIds`  | List the check IDs available for a test run                                    | `get_test_run_check_available_ids`                                                                                               |
-| `js-coverage --testRunId`        | Per-file JS coverage for a test run                                            | `get_test_run_js_coverage`                                                                                                       |
-| `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                     | `get_project_js_coverage`                                                                                                        |
-| `js-coverage --replayId`         | Per-file JS coverage for a replay                                              | `get_replay_js_coverage`                                                                                                         |
-| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff                                    | `get_replay_diff_js_coverage_diff`                                                                                               |
-| `sessions`                       | List a project's recently recorded sessions                                    | `get_sessions`                                                                                                                   |
-| `upload-build`                   | Upload a build, register a deployment                                          | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
-| `trigger-test-run`               | Trigger a run against a deployment                                             | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
-| `complete-base-run`              | Replay the sessions a base run has not run yet                                 | `complete_base_run` (returns once scheduled — does not wait for completion)                                                      |
-| `submit-feedback`                | Submit free-form feedback about Meticulous                                     | `submit_feedback`                                                                                                                |
+| Command                          | Purpose                                                                     | MCP tool                                                                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `test-run-for-commit`            | Look up the latest test run for a commit                                    | `get_test_run_for_commit`                                                                                                        |
+| `test-run-diffs`                 | List the screenshot diffs of a test run                                     | `get_test_run_diffs`                                                                                                             |
+| `test-run-diffs --counts`        | Aggregate diff/review totals only                                           | `get_test_run_diffs_counts`                                                                                                      |
+| `diff-comments`                  | Review comments for a screenshot diff                                       | `get_diff_comments`                                                                                                              |
+| `reject-diff`                    | Reject a screenshot diff (real, blocking decision) and comment why          | `reject_diff`                                                                                                                    |
+| `ignore-diff`                    | Comment that a screenshot diff is unrelated to the change (decides nothing) | `ignore_diff`                                                                                                                    |
+| `create-diff-comment`            | Start a review comment thread                                               | `create_diff_comment`                                                                                                            |
+| `reply-to-diff-comment`          | Reply to a review comment thread                                            | `reply_to_diff_comment`                                                                                                          |
+| `image-urls`                     | Signed URLs for a screenshot diff's images                                  | `get_image_urls`                                                                                                                 |
+| `image-files`                    | Download a screenshot diff's images to disk                                 | _(none — use `get_image_urls`)_                                                                                                  |
+| `dom-diff`                       | DOM diff for a screenshot diff                                              | `get_dom_diff`                                                                                                                   |
+| `timeline-diff`                  | Timeline event diffs for a replay diff                                      | `get_timeline_diff`                                                                                                              |
+| `test-run-check`                 | Get the Markdown report for a non-visual check                              | `get_test_run_check`                                                                                                             |
+| `test-run-check --availableIds`  | List the check IDs available for a test run                                 | `get_test_run_check_available_ids`                                                                                               |
+| `js-coverage --testRunId`        | Per-file JS coverage for a test run                                         | `get_test_run_js_coverage`                                                                                                       |
+| `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                  | `get_project_js_coverage`                                                                                                        |
+| `js-coverage --replayId`         | Per-file JS coverage for a replay                                           | `get_replay_js_coverage`                                                                                                         |
+| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff                                 | `get_replay_diff_js_coverage_diff`                                                                                               |
+| `sessions`                       | List a project's recently recorded sessions                                 | `get_sessions`                                                                                                                   |
+| `upload-build`                   | Upload a build, register a deployment                                       | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
+| `trigger-test-run`               | Trigger a run against a deployment                                          | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
+| `complete-base-run`              | Replay the sessions a base run has not run yet                              | `complete_base_run` (returns once scheduled — does not wait for completion)                                                      |
+| `submit-feedback`                | Submit free-form feedback about Meticulous                                  | `submit_feedback`                                                                                                                |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
 
@@ -138,19 +138,19 @@ ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..
 **Purpose:** Record an agent's verdict on one screenshot difference, backed by a review comment containing a succinct reason at required approximate normalized coordinates. Returns the created comment's `id`. The two are **not symmetric**:
 
 - **`reject-diff`** writes a real `rejected` decision — the same `decision` a human rejection would write, blocking the check identically, and replacing whatever decision (human or agent) was there before.
-- **`ignore-diff` decides nothing.** It only posts a comment stating the agent's view that the diff is expected variation; the diff stays `unreviewed` and the check stays pending. This is intentional, not a limitation to work around: only a human can write `accepted`/`ignored`, so no holder of a project write token can green their own pull request. An agent can escalate a diff (reject) but never clear one.
+- **`ignore-diff` decides nothing.** It only posts a comment stating the agent's view that the diff is unrelated to the change under review — typically a flake (subpixel rendering noise, animation non-determinism); the diff stays `unreviewed` and the check stays pending. This is intentional, not a limitation to work around: only a human can write `accepted`/`ignored`, so no holder of a project write token can green their own pull request. An agent can escalate a diff (reject) but never clear one.
 
 The test run must belong to a pull request, or be a custom-trigger run — the run you triggered yourself, where the decision is recorded against the run itself. A run that's neither (a plain push or crawler run) has nowhere to record a decision, and the call is rejected.
 
 **Every call posts a new comment**, same as `create-diff-comment` — including a `reject-diff` repeating a verdict the diff already carries. That repeat appends no second decision (the verdict already stands), but it still records its own reason and coordinates and returns that comment's `id`, so a retry after a dropped connection is safe for the decision while leaving an extra comment on the thread. A `reject-diff` that _changes_ the standing verdict resolves the comment behind the decision it replaces.
 
-| Option             | Type   | Description                                            |
-| ------------------ | ------ | ------------------------------------------------------ |
-| `--replayDiffId`   | string | Replay diff from `test-run-diffs` (required)           |
-| `--screenshotName` | string | Screenshot name from `test-run-diffs` (required)       |
-| `--reason`         | string | Why the diff is rejected or ignored (required)         |
-| `--x`              | number | Approximate normalized x of the change, 0–1 (required) |
-| `--y`              | number | Approximate normalized y of the change, 0–1 (required) |
+| Option             | Type   | Description                                                            |
+| ------------------ | ------ | ---------------------------------------------------------------------- |
+| `--replayDiffId`   | string | Replay diff from `test-run-diffs` (required)                           |
+| `--screenshotName` | string | Screenshot name from `test-run-diffs` (required)                       |
+| `--reason`         | string | Why the diff is a regression, or is unrelated to the change (required) |
+| `--x`              | number | Approximate normalized x of the change, 0–1 (required)                 |
+| `--y`              | number | Approximate normalized y of the change, 0–1 (required)                 |
 
 ## agent create-diff-comment / agent reply-to-diff-comment
 

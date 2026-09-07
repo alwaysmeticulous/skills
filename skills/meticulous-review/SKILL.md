@@ -96,7 +96,7 @@ For each representative screenshot, compare the diff image and DOM diff against 
 - **Expected** — matches one of Step 0's expected changes (or, with full implementation context, is clearly a desired outcome). Check the diff actually looks like _that_ change and nothing more — a diff can be expected in kind but still carry an extra, unrelated regression bundled into the same screenshot. Nothing to flag.
 - **Unintended** — not accounted for by Step 0. Use the timeline to rule out failed requests, redirects, or other anomalies, then flag it:
   - **Potential regression** (a real side effect, or otherwise clearly wrong) → **reject**.
-  - **Likely flake / unrelated noise** (a flaky timestamp, non-determinism, an infra blip) → **ignore**.
+  - **Unrelated to the change under review** — typically a flake, e.g. subpixel rendering noise or animation non-determinism → **ignore**.
 
 Either way it's flagged, not silently dropped — a human still needs to see it.
 
@@ -108,13 +108,15 @@ Either way it's flagged, not silently dropped — a human still needs to see it.
 # CLI
 meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1>
 meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1>
+meticulous agent create-diff-comment --replayDiffId=<id> --screenshotName=<name> --text="<note>" --x=<0..1> --y=<0..1>
 
 # MCP
 reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
+create_diff_comment(replayDiffId="<id>", screenshotName="<name>", text="<note>", x=<0..1>, y=<0..1>)
 ```
 
-Call one of these for **every** diff classified as unintended, in addition to including it in the final report. `--reason` is the succinct explanation from your classification above; `--x`/`--y` are the approximate normalized coordinates of the changed region, estimated from the diff image.
+Call `reject-diff` or `ignore-diff` for **every** diff classified as unintended, in addition to including it in the final report. `--reason` is the succinct explanation from your classification above; `--x`/`--y` are the approximate normalized coordinates of the changed region, estimated from the diff image. `create-diff-comment` is the neutral option for anything you want on the record without a verdict.
 
 **Not symmetric:** `reject-diff` writes a real, blocking decision, same as a human rejection. `ignore-diff` decides nothing — it's a comment only, so the diff stays `unreviewed` and the check stays pending either way. Only a human can clear a diff, so don't oversell an `ignore-diff` call in your final report as having resolved anything.
 
