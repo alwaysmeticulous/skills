@@ -52,7 +52,8 @@ Inspect the diffs using the mechanics from the `meticulous-review` skill (Steps 
 1. **No diffs at all** — you're done with this step; proceed to Step 5.
 2. **One or more diffs** — for each one, look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why, using the timeline (Step 4 there) if the cause isn't obvious from the DOM/images alone. Then classify it:
    - **Regression (the default assumption)** — a real side effect of your change.
-   - **Acceptable** — you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't reject or ignore these yet — hold off until Step 6, where the verdict gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
+   - **Acceptable** — you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't file anything on these yet — hold off until Step 6, where the note gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
+   - **Unrelated to your change** — typically a flake, e.g. subpixel rendering noise or animation non-determinism. Not a label for a diff you can't explain: if your change plausibly caused it, it belongs in one of the other buckets.
    - **Can't fix, and can't confidently justify either** — don't get stuck looping over it.
 
 For a **regression**, reject it right away so there's a paper trail as you go — even though you're both reviewer and implementer here:
@@ -103,17 +104,27 @@ get_test_run_diffs(testRunId="<id>")
 
 If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.
 
-For every diff that's still present here and that you justified rather than fixed (Step 4), leave your reasoning on the record via `ignore-diff` — this is the run CI and a human reviewer will actually see, so it's where that verdict needs to be filed:
+For every diff that's still present here and that you justified rather than fixed (Step 4's **Acceptable** bucket), leave your reasoning on the record as a plain review comment — this is the run CI and a human reviewer will actually see:
 
 ```bash
 # CLI
-meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why it's justified>" --x=<0..1> --y=<0..1>
+meticulous agent create-diff-comment --replayDiffId=<id> --screenshotName=<name> --text="<why it's justified>" --x=<0..1> --y=<0..1>
 
 # MCP
-ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's justified>", x=<0..1>, y=<0..1>)
+create_diff_comment(replayDiffId="<id>", screenshotName="<name>", text="<why it's justified>", x=<0..1>, y=<0..1>)
 ```
 
-`ignore-diff` decides nothing — the diff stays `unreviewed` and the check stays pending — but it puts your reasoning on record so the human reviewing the PR doesn't have to re-derive it.
+Use `ignore-diff` **only** for a Step 4 **unrelated** diff — one that has nothing to do with your change:
+
+```bash
+# CLI
+meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why it's unrelated>" --x=<0..1> --y=<0..1>
+
+# MCP
+ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's unrelated>", x=<0..1>, y=<0..1>)
+```
+
+Neither decides anything — the diff stays `unreviewed` and the check stays pending — but your reasoning is on record for the human reviewing the PR.
 
 ## Step 7 -- Report feedback to Meticulous
 

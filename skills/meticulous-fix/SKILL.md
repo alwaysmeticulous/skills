@@ -22,7 +22,7 @@ get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, i
 
 **Important — these `--only*` flags are additive (OR'd):** passing both `--onlyRejected` and `--onlyWithComments` returns every diff that's rejected, has an open comment, or both — not just the intersection — since a comment on a diff that wasn't formally rejected may still contain an instruction worth acting on. `--includeAllDiffs` is implied, so this spans the full run rather than just the selected subset; `--includeReviews` adds `decision`/`openComments` columns so you can tell which case each row is.
 
-**Not every commented row is a fix target.** The `meticulous-review` skill's `ignore-diff` posts a flake/noise note and leaves the diff `unreviewed` — that comment is not a fix instruction. When reading Step 1's rows, skip diffs whose only open comments are ignore/flake notes; leave those threads alone.
+**Not every commented row is a fix target.** The `meticulous-review` skill's `ignore-diff` posts a note saying the diff is unrelated to the change and leaves it `unreviewed` — that comment is not a fix instruction. When reading Step 1's rows, skip diffs whose only open comments are those; leave those threads alone.
 
 ## Step 2 -- Read the review comments for diffs that have any
 
@@ -60,7 +60,7 @@ See the `meticulous-review` skill's Steps 2-3 for output formats and the optiona
 
 ## Step 4 -- Fix the underlying code
 
-For each **fix target** — a rejected diff, or a non-rejected diff whose comments ask for a concrete fix — make the code change that resolves the comment's instructions (or, in the no-comment fallback, the regression you identified). Skip ignore/flake-only threads from Step 1; do not change code for them and do not reply on them. A single code change may resolve multiple fix-target diffs at once (e.g. one component bug causing several screenshot diffs) — don't fix the same root cause repeatedly.
+For each **fix target** — a rejected diff, or a non-rejected diff whose comments ask for a concrete fix — make the code change that resolves the comment's instructions (or, in the no-comment fallback, the regression you identified). Skip the ignore-only threads from Step 1; do not change code for them and do not reply on them. A single code change may resolve multiple fix-target diffs at once (e.g. one component bug causing several screenshot diffs) — don't fix the same root cause repeatedly.
 
 Close the loop on **every fix-target** diff — fixed or not — by replying to its comment thread (or creating one if it had none):
 
@@ -110,7 +110,7 @@ If a diff you believed you fixed is still showing up (decisions/comments carry f
 
 ## Step 6 -- Final report
 
-Summarize the outcome, covering **every fix-target** diff from Step 1 (omit ignore/flake-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
+Summarize the outcome, covering **every fix-target** diff from Step 1 (omit the ignore-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
 
 1. **Fixed**: which diffs were resolved, what the underlying code change was, and which comment(s) it addressed, if any.
 2. **Not fixed** (if any): which diffs couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. Note that you left this explanation as a reply/comment on the diff (Step 4) — don't just leave it in the report where only this conversation sees it. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.
