@@ -39,7 +39,7 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `js-coverage --testRunId`        | Per-file JS coverage for a test run                                         | `get_test_run_js_coverage`                                                                                                       |
 | `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                  | `get_project_js_coverage`                                                                                                        |
 | `js-coverage --replayId`         | Per-file JS coverage for a replay                                           | `get_replay_js_coverage`                                                                                                         |
-| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff                                 | `get_replay_diff_js_coverage_diff`                                                                                               |
+| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff, or between two whole test runs | `get_replay_diff_js_coverage_diff` / `get_test_run_js_coverage_diff`                                                             |
 | `sessions`                       | List a project's recently recorded sessions                                 | `get_sessions`                                                                                                                   |
 | `upload-build`                   | Upload a build, register a deployment                                       | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
 | `trigger-test-run`               | Trigger a run against a deployment                                          | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
@@ -259,14 +259,21 @@ On MCP, `get_test_run_check` does not poll internally — poll it yourself every
 meticulous agent js-coverage --testRunId=<id>          # or --commitSha=<sha>
 meticulous agent js-coverage --latestForProject
 meticulous agent js-coverage --replayId=<id>
+meticulous agent js-coverage --summary                 # aggregate totals, not the per-file list
+meticulous agent js-coverage --orderBy=uncoveredLines --limit=50
+meticulous agent js-coverage --limit=0                 # every file, not just the first page
 
 # MCP
 get_test_run_js_coverage(testRunId="<id>")
 get_project_js_coverage()
 get_replay_js_coverage(replayId="<id>")
+get_test_run_js_coverage_summary(testRunId="<id>")
+get_project_js_coverage_summary()
 ```
 
 **Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, a combined set of runs, or a project's latest successful run. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
+
+**Output is paged: the first 100 files unless `--limit` says otherwise, ordered by `--orderBy`.** The number of matching files is always reported, so a page can be told from the whole set — pass `--limit=0` whenever you need every file (e.g. to diff two whole file sets). `--summary` is the better answer when you only want totals: it reads the run's aggregate directly instead of you summing per-file rows, which would leave uncovered files out of the denominator and overstate coverage.
 
 A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its selected sessions on demand, so while any of them could still be replayed its coverage understates the commit and this is refused, saying how many are missing. Either replay the rest with [`complete-base-run`](#agent-complete-base-run) and ask again, or pass `--latestForProject` for the project's overall coverage. A run that has replayed everything it can answers normally — a small share of the set being permanently unreplayable (a chunk that finished without reporting some of its sessions) is tolerated rather than blocking the commit forever, and above that share the refusal says so and that completing the run cannot help.
 
@@ -277,10 +284,14 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 | `--replayId`                                                                             | string  | Coverage for a single replay                                                                                                                                                   |
 | `--screenshotName`                                                                       | string  | Restrict to a single screenshot of the replay                                                                                                                                  |
 | `--headPlusTestRunIds` / `--testRunIds`                                                  | string  | Comma-separated run IDs to union coverage across (same project + commit)                                                                                                       |
-| `--globFilter`                                                                           | string  | Only include files matching the glob                                                                                                                                           |
+| `--globFilter`                                                                           | string  | Only include files matching the glob; repeatable, matching any of several                                                                                                      |
 | `--includeAllFiles`                                                                      | boolean | Include files with no coverage too                                                                                                                                             |
 | `--prDiffOnly`                                                                           | boolean | Restrict to files changed in the PR (test-run queries only)                                                                                                                    |
 | `--includeExecutableRanges` / `--includeUncoveredRanges` / `--includeCoveragePercentage` | boolean | Add richer per-file coverage columns                                                                                                                                           |
+| `--includeLineCounts`                                                                    | boolean | Add `executedLines`/`executableLines`/`uncoveredLines` counts — far smaller than the equivalent ranges, so use these to triage then ask for ranges on the files that matter    |
+| `--orderBy` / `--order`                                                                  | string  | Order rows by `repoFilePath`, `executedLines`, `executableLines`, `uncoveredLines` or `coveragePercentage`; the numeric fields default to descending                           |
+| `--limit` / `--offset`                                                                   | number  | Page the output. `--limit` defaults to 100; `--limit=0` returns every file                                                                                                     |
+| `--summary`                                                                              | boolean | Report the run's aggregate totals instead of the per-file list; incompatible with the column, row-filter, ordering and paging options                                          |
 | `--dontWaitForTestRunToComplete`                                                         | boolean | Report an in-progress run and exit immediately instead of waiting                                                                                                              |
 
 ## agent js-coverage-diff
@@ -288,12 +299,19 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 ```bash
 # CLI
 meticulous agent js-coverage-diff --replayDiffId=<id> [--screenshotName=<name>] [--globFilter=<glob>]
+meticulous agent js-coverage-diff --testRunId=<id> --baseTestRunId=<id>
+meticulous agent js-coverage-diff --testRunId=<id> --baseTestRunId=<id> --summary
 
 # MCP
 get_replay_diff_js_coverage_diff(replayDiffId="<id>")
+get_test_run_js_coverage_diff(testRunId="<id>", baseTestRunId="<id>")
 ```
 
-**Purpose:** Per-file JS coverage diff for a replay diff. Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`).
+**Purpose:** Per-file JS coverage diff, either for one replay pair (`--replayDiffId`) or between two whole test runs (`--testRunId` against `--baseTestRunId`). Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`); files whose executed lines match exactly are absent.
+
+The whole-run form is what answers "did the sessions I just recorded cover anything the baseline didn't": `--headUnionTestRunIds` / `--baseUnionTestRunIds` union extra runs into either side (both sides share one budget of 10 additional runs), and both sides must belong to the same project and have executed the same commit. `--summary` reports the aggregate difference instead of the list — files added/removed/modified, each side's executed line count, and how many lines the head side newly covers (`uniqueLinesAdded`) or no longer covers (`regressedLines`) — and skips computing the per-file rows entirely.
+
+Both scopes page the per-file list: `--limit` (default 100, `0` for every differing file) and `--offset`, with the number of differing files always reported.
 
 ## agent sessions
 
