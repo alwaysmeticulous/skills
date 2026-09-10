@@ -39,7 +39,7 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `js-coverage --testRunId`        | Per-file JS coverage for a test run                                         | `get_test_run_js_coverage`                                                                                                       |
 | `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                  | `get_project_js_coverage`                                                                                                        |
 | `js-coverage --replayId`         | Per-file JS coverage for a replay                                           | `get_replay_js_coverage`                                                                                                         |
-| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff, or between two whole test runs | `get_replay_diff_js_coverage_diff` / `get_test_run_js_coverage_diff`                                                             |
+| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff, or a test run against its base | `get_replay_diff_js_coverage_diff` / `get_test_run_js_coverage_diff`                                                             |
 | `sessions`                       | List a project's recently recorded sessions                                 | `get_sessions`                                                                                                                   |
 | `upload-build`                   | Upload a build, register a deployment                                       | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
 | `trigger-test-run`               | Trigger a run against a deployment                                          | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
@@ -299,17 +299,21 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 ```bash
 # CLI
 meticulous agent js-coverage-diff --replayDiffId=<id> [--screenshotName=<name>] [--globFilter=<glob>]
-meticulous agent js-coverage-diff --testRunId=<id> --baseTestRunId=<id>
-meticulous agent js-coverage-diff --testRunId=<id> --baseTestRunId=<id> --summary
+meticulous agent js-coverage-diff                      # the current commit's run, against its base
+meticulous agent js-coverage-diff --testRunId=<id> --summary
 
 # MCP
 get_replay_diff_js_coverage_diff(replayDiffId="<id>")
-get_test_run_js_coverage_diff(testRunId="<id>", baseTestRunId="<id>")
+get_test_run_js_coverage_diff(testRunId="<id>")
 ```
 
-**Purpose:** Per-file JS coverage diff, either for one replay pair (`--replayDiffId`) or between two whole test runs (`--testRunId` against `--baseTestRunId`). Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`); files whose executed lines match exactly are absent.
+**Purpose:** Per-file JS coverage diff, either for one replay pair (`--replayDiffId`) or for a whole test run against the base run it was compared against — the same base its screenshot diffs use. Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`); files whose executed lines match exactly are absent.
 
-The whole-run form is what answers "did the sessions I just recorded cover anything the baseline didn't": `--headUnionTestRunIds` / `--baseUnionTestRunIds` union extra runs into either side (both sides share one budget of 10 additional runs), and both sides must belong to the same project and have executed the same commit. `--summary` reports the aggregate difference instead of the list — files added/removed/modified, each side's executed line count, and how many lines the head side newly covers (`uniqueLinesAdded`) or no longer covers (`regressedLines`) — and skips computing the per-file rows entirely.
+The whole-run form is the default: a bare invocation diffs the run for your current commit, and the base is resolved from that run rather than named by you. `--summary` reports the aggregate difference instead of the list — files added/removed/modified, each side's executed line count, and how many lines the run newly covers (`uniqueLinesAdded`) or no longer covers (`regressedLines`) — and skips computing the per-file rows entirely.
+
+Two things it refuses, both as plain errors saying what to ask for instead: a run that **is** a base run (a default-branch checkout resolves to one) has no base of its own, and a run triggered outside a PR was never compared against one. If the base run hasn't replayed its whole selected set yet, the error names `complete-base-run --testRunId=<base>` — diffing against a partly-replayed base would report coverage as new when it was only unmeasured.
+
+The two sides are different commits whenever the change altered anything, so in a file the change edited a `modified` row may be its lines having shifted rather than its coverage having changed. `baseExecutionSha` on the response says which commit the base side's line numbers reference; unedited files, and the added/removed rows, are unaffected.
 
 Both scopes page the per-file list: `--limit` (default 100, `0` for every differing file) and `--offset`, with the number of differing files always reported.
 
