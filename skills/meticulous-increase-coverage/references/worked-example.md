@@ -38,7 +38,7 @@ Percentages don't say _what_ is uncovered — get the executed ranges and read
 the gaps:
 
 ```bash
-meticulous agent js-coverage --globFilter "src/components/Card.tsx"
+meticulous agent js-coverage --globFilter "src/components/Card.tsx" --limit=0
 # executedRanges: 5-45;56-64;68-71;76-104;124-166
 ```
 
@@ -76,7 +76,7 @@ keydown. 17 events.
 
 ```bash
 meticulous agent js-coverage --headPlusTestRunIds "<newRunId>" \
-  --includeAllFiles --includeCoveragePercentage
+  --includeAllFiles --includeCoveragePercentage --limit=0
 ```
 
 | File                       | Before | After    |

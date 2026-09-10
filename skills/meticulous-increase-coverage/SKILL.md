@@ -57,8 +57,12 @@ token to select — in those cases the fix is a different credential, not
 
 ```bash
 meticulous agent js-coverage --includeAllFiles --includeCoveragePercentage \
-  > /tmp/baseline-coverage.tsv
+  --limit=0 > /tmp/baseline-coverage.tsv
 ```
+
+`--limit=0` matters: without it `js-coverage` returns only the first page of
+files (100, ordered by repo path), and every comparison in this skill diffs
+whole file sets. A truncated baseline looks like a valid one.
 
 If this reports **"No test run found for commit …"** (it shouldn't, if the
 check above passed), stop and report to the user. Do not work around it by
@@ -443,7 +447,8 @@ meticulous agent trigger-test-run --sessionIds "<id1>,<id2>,..."
 
 ```bash
 meticulous agent js-coverage --headPlusTestRunIds "<newRunId>" \
-  --includeAllFiles --includeCoveragePercentage > /tmp/combined-coverage.tsv
+  --includeAllFiles --includeCoveragePercentage --limit=0 \
+  > /tmp/combined-coverage.tsv
 ```
 
 This unions your new run into the baseline run resolved from HEAD — the same
@@ -466,7 +471,8 @@ name both sides explicitly, using the baseline id from Step 0:
 
 ```bash
 meticulous agent js-coverage --testRunIds "<baselineRunId>,<newRunId>" \
-  --includeAllFiles --includeCoveragePercentage > /tmp/combined-coverage.tsv
+  --includeAllFiles --includeCoveragePercentage --limit=0 \
+  > /tmp/combined-coverage.tsv
 ```
 
 If the union is rejected because the runs executed different commits, that is
