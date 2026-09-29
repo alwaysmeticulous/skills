@@ -93,7 +93,7 @@ TSV columns: `diff` (` ` identical, `-` removed, `+` added, `!` changed), `timeM
 
 For each representative screenshot, compare the diff image and DOM diff against Step 0's expectations:
 
-- **Expected** — matches one of Step 0's expected changes (or, with full implementation context, is clearly a desired outcome). Check the diff actually looks like _that_ change and nothing more — a diff can be expected in kind but still carry an extra, unrelated regression bundled into the same screenshot. Nothing to flag.
+- **Expected** — matches one of Step 0's expected changes (or, with full implementation context, is clearly a desired outcome). Check the diff actually looks like _that_ change and nothing more — a diff can be expected in kind but still carry an extra, unrelated regression bundled into the same screenshot. Nothing to flag; **approve** it if `approve-diff` is available (Step 6).
 - **Unintended** — not accounted for by Step 0. Use the timeline to rule out failed requests, redirects, or other anomalies, then flag it:
   - **Potential regression** (a real side effect, or otherwise clearly wrong) → **reject**.
   - **Unrelated to the change under review** — typically a flake, e.g. subpixel rendering noise or animation non-determinism → **ignore**.
@@ -102,32 +102,50 @@ Either way it's flagged, not silently dropped — a human still needs to see it.
 
 **This skill reviews and flags — it does not fix.** Hand a rejected diff off to the `meticulous-fix` skill (or the person/skill implementing the change) — don't attempt code changes here.
 
-## Step 6 -- Flag the diff
+## Step 6 -- Flag or approve the diff
 
 ```bash
 # CLI
 meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1>
+meticulous agent approve-diff --replayDiffId=<id> --screenshotName=<name>
 meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1>
 meticulous agent create-diff-comment --replayDiffId=<id> --screenshotName=<name> --text="<note>" --x=<0..1> --y=<0..1>
 
 # MCP
 reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
+approve_diff(replayDiffId="<id>", screenshotName="<name>")
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
 create_diff_comment(replayDiffId="<id>", screenshotName="<name>", text="<note>", x=<0..1>, y=<0..1>)
 ```
 
 Call `reject-diff` or `ignore-diff` for **every** diff classified as unintended, in addition to including it in the final report. `--reason` is the succinct explanation from your classification above; `--x`/`--y` are the approximate normalized coordinates of the changed region, estimated from the diff image. `create-diff-comment` is the neutral option for anything you want on the record without a verdict.
 
-**Not symmetric:** `reject-diff` writes a real, blocking decision, same as a human rejection. `ignore-diff` decides nothing — it's a comment only, so the diff stays `unreviewed` and the check stays pending either way. Only a human can clear a diff, so don't oversell an `ignore-diff` call in your final report as having resolved anything.
+**Is `approve-diff` available?** Only on projects with the **Enable approve/ignore diff actions** setting. Over MCP, `approve_diff` is only offered when it's on; the CLI can't tell up front, so call it on the first expected diff — a 403 starting "Agents may not approve diffs on project …" means it's off, so skip everything about approving from here on.
+
+Call `approve-diff` for every diff classified as expected. Unlike reject and ignore, it needs no reason.
+
+**Not symmetric:** `reject-diff` writes a real, blocking decision, same as a human rejection. Where `approve-diff` is available, `approve-diff` and `ignore-diff` also write real decisions that clear the diff. Otherwise `ignore-diff` decides nothing — it's a comment only, so the diff stays `unreviewed` and the check stays pending — so don't oversell it in your final report as having resolved anything.
+
+**Where `approve-diff` is available, finish with a pass over every remaining diff.** Step 1 returned only a representative subset, and the check passes only once every diff has a decision. So when you've worked through that subset, list what's still undecided:
+
+```bash
+# CLI
+meticulous agent test-run-diffs --includeAllDiffs --onlyUnreviewed
+
+# MCP
+get_test_run_diffs(testRunId="<id>", includeAllDiffs=true, onlyUnreviewed=true)
+```
+
+Take each row through Steps 2–6 like the first ones. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
 
 ## Step 7 -- Final report
 
 Cover **all significant visual changes**.
 
-1. **Expected changes** — brief, a line or two each: what changed and which Step 0 expectation it matches.
+1. **Expected changes** — brief, a line or two each: what changed, which Step 0 expectation it matches, and whether you approved it.
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 
-The PR is only good when every diff has been matched or flagged. If any diff is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself.
+The PR is only good when every diff has been matched or flagged. If any diff is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending.
 
 ## Step 8 -- Report feedback to Meticulous
 

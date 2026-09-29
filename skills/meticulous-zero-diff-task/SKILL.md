@@ -124,7 +124,7 @@ meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reaso
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's unrelated>", x=<0..1>, y=<0..1>)
 ```
 
-Neither decides anything — the diff stays `unreviewed` and the check stays pending — but your reasoning is on record for the human reviewing the PR.
+A comment decides nothing — the diff stays `unreviewed` and the check stays pending — but your reasoning is on record for the human reviewing the PR.
 
 ## Step 7 -- Report feedback to Meticulous
 

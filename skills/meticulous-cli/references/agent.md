@@ -27,7 +27,8 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `test-run-diffs --counts`        | Aggregate diff/review totals only                                           | `get_test_run_diffs_counts`                                                                                                      |
 | `diff-comments`                  | Review comments for a screenshot diff                                       | `get_diff_comments`                                                                                                              |
 | `reject-diff`                    | Reject a screenshot diff (real, blocking decision) and comment why          | `reject_diff`                                                                                                                    |
-| `ignore-diff`                    | Comment that a screenshot diff is unrelated to the change (decides nothing) | `ignore_diff`                                                                                                                    |
+| `approve-diff`                   | Approve a screenshot diff, optionally commenting why (opt-in per project)   | `approve_diff`                                                                                                                   |
+| `ignore-diff`                    | Say a diff is unrelated to the change (comment only, unless opted in)       | `ignore_diff`                                                                                                                    |
 | `create-diff-comment`            | Start a review comment thread                                               | `create_diff_comment`                                                                                                            |
 | `reply-to-diff-comment`          | Reply to a review comment thread                                            | `reply_to_diff_comment`                                                                                                          |
 | `image-urls`                     | Signed URLs for a screenshot diff's images                                  | `get_image_urls`                                                                                                                 |
@@ -39,11 +40,12 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `js-coverage --testRunId`        | Per-file JS coverage for a test run                                         | `get_test_run_js_coverage`                                                                                                       |
 | `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                  | `get_project_js_coverage`                                                                                                        |
 | `js-coverage --replayId`         | Per-file JS coverage for a replay                                           | `get_replay_js_coverage`                                                                                                         |
-| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff                                 | `get_replay_diff_js_coverage_diff`                                                                                               |
+| `js-coverage-diff`               | Per-file JS coverage diff for a replay diff, or a test run against its base | `get_replay_diff_js_coverage_diff` / `get_test_run_js_coverage_diff`                                                             |
 | `sessions`                       | List a project's recently recorded sessions                                 | `get_sessions`                                                                                                                   |
 | `upload-build`                   | Upload a build, register a deployment                                       | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
 | `trigger-test-run`               | Trigger a run against a deployment                                          | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
 | `complete-base-run`              | Replay the sessions a base run has not run yet                              | `complete_base_run` (returns once scheduled — does not wait for completion)                                                      |
+| `promote-sessions`               | Add sessions a pinned-session run replayed to the selected set              | `promote_sessions`                                                                                                               |
 | `submit-feedback`                | Submit free-form feedback about Meticulous                                  | `submit_feedback`                                                                                                                |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
@@ -103,7 +105,7 @@ get_test_run_diffs_counts(testRunId="<id>")
 
 The `--only*` flags (`--onlyUnreviewed`, `--onlyRejected`, `--onlyWithComments`) are **additive (OR'd), not a narrowing combination** — passing more than one widens the output to their union (e.g. rejected diffs _plus_ diffs with comments, not the intersection), rather than narrowing to diffs matching all of them.
 
-The `decision` values are `accepted`, `rejected`, `ignored`, and `unreviewed` — there's no separate agent bucket: an agent's `reject-diff` (see below) writes a real `rejected` decision, indistinguishable from a human's at this level, and blocks the check identically. `--counts`' `numRejected` is this same unified count. An agent can only ever write `rejected` — there's no agent-facing way to write `accepted`/`ignored`, so `--onlyUnreviewed` is unaffected by agent activity.
+The `decision` values are `accepted`, `rejected`, `ignored`, and `unreviewed` — there's no separate agent bucket: an agent's `reject-diff` (see below) writes a real `rejected` decision, indistinguishable from a human's at this level, and blocks the check identically. `--counts`' `numRejected` is this same unified count. By default an agent can only write `rejected`, so `--onlyUnreviewed` shrinks only as agents reject; on a project with **Enable approve/ignore diff actions** turned on (project settings → Agents), `approve-diff` and `ignore-diff` also write real `accepted`/`ignored` decisions, and count toward `numApproved`/`numIgnored` the same way.
 
 ## agent diff-comments
 
@@ -135,12 +137,14 @@ reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
 ```
 
-**Purpose:** Record an agent's verdict on one screenshot difference, backed by a review comment containing a succinct reason at required approximate normalized coordinates. Returns the created comment's `id`. The two are **not symmetric**:
+**Purpose:** Record an agent's verdict on one screenshot difference, backed by a review comment containing a succinct reason at required approximate normalized coordinates. Returns the created comment's `id`.
 
 - **`reject-diff`** writes a real `rejected` decision — the same `decision` a human rejection would write, blocking the check identically, and replacing whatever decision (human or agent) was there before.
-- **`ignore-diff` decides nothing.** It only posts a comment stating the agent's view that the diff is unrelated to the change under review — typically a flake (subpixel rendering noise, animation non-determinism); the diff stays `unreviewed` and the check stays pending. This is intentional, not a limitation to work around: only a human can write `accepted`/`ignored`, so no holder of a project write token can green their own pull request. An agent can escalate a diff (reject) but never clear one.
+- **`ignore-diff`** states the agent's view that the diff is unrelated to the change under review — typically a flake (subpixel rendering noise, animation non-determinism). What it records depends on the project:
+  - **By default it decides nothing.** It only posts the comment; the diff stays `unreviewed` and the check stays pending. That is deliberate: without the project's opt-in, no holder of a project write token can green their own pull request — an agent can escalate a diff (reject) but never clear one.
+  - **With Enable approve/ignore diff actions** turned on (project settings → Agents), it writes a real, non-blocking `ignored` decision, the same as a human ignoring the diff — except on a diff a person rejected, where it is refused with a 409 (see `approve-diff`).
 
-The test run must belong to a pull request, or be a custom-trigger run — the run you triggered yourself, where the decision is recorded against the run itself. A run that's neither (a plain push or crawler run) has nowhere to record a decision, and the call is rejected.
+The test run must be a pull request run, or a custom-trigger run — the run you triggered yourself, where the decision is recorded against the run itself. Any other run (a plain push or crawler run, or an internal pull request run that isn't shown to users) is refused for `reject-diff`, `ignore-diff` and `approve-diff`, and for `create-diff-comment` and `reply-to-diff-comment` too — even where `ignore-diff` would only have commented.
 
 **Every call posts a new comment**, same as `create-diff-comment` — including a `reject-diff` repeating a verdict the diff already carries. That repeat appends no second decision (the verdict already stands), but it still records its own reason and coordinates and returns that comment's `id`, so a retry after a dropped connection is safe for the decision while leaving an extra comment on the thread. A `reject-diff` that _changes_ the standing verdict resolves the comment behind the decision it replaces.
 
@@ -151,6 +155,33 @@ The test run must belong to a pull request, or be a custom-trigger run — the r
 | `--reason`         | string | Why the diff is a regression, or is unrelated to the change (required) |
 | `--x`              | number | Approximate normalized x of the change, 0–1 (required)                 |
 | `--y`              | number | Approximate normalized y of the change, 0–1 (required)                 |
+
+## agent approve-diff
+
+```bash
+# CLI
+meticulous agent approve-diff --replayDiffId=<id> --screenshotName=<name> [--reason="<why>" --x=<0..1> --y=<0..1>]
+
+# MCP
+approve_diff(replayDiffId="<id>", screenshotName="<name>")
+approve_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
+```
+
+**Purpose:** Approve one screenshot difference as an intended result of the change under review. It writes a real `accepted` decision, clearing the diff the same as a human approval — so once every diff is approved (or ignored), the pull request check passes without a human review.
+
+**Only available on projects with Enable approve/ignore diff actions** turned on (project settings → Agents); anywhere else the call is refused with a 403 naming the setting. Don't treat that refusal as an error to work around — the project hasn't allowed agents to clear diffs, so leave the diff for a human (optionally with `create-diff-comment`).
+
+**An agent can't clear a human rejection.** If the latest decision on the diff is a `rejected` a person made, `approve-diff` (and an opted-in `ignore-diff`) is refused with a 409 and nothing is recorded. Replacing an agent's own earlier decision is fine. Leave a human-rejected diff for a human.
+
+Unlike reject and ignore, **the reason is optional**: an intended change usually needs no explanation. Pass `--reason`, `--x` and `--y` together or not at all — the coordinates only place the reason's comment. With a reason it outputs the comment's ID (`{ commentId }` with `--json`); without one there is no comment, so it outputs nothing (`{}` with `--json`). The same run requirement as `reject-diff` applies (a pull request or custom-trigger run), and a repeat of an approval the diff already carries appends no second decision.
+
+| Option             | Type   | Description                                               |
+| ------------------ | ------ | --------------------------------------------------------- |
+| `--replayDiffId`   | string | Replay diff from `test-run-diffs` (required)              |
+| `--screenshotName` | string | Screenshot name from `test-run-diffs` (required)          |
+| `--reason`         | string | Why the diff is intended (optional; requires `--x`/`--y`) |
+| `--x`              | number | Approximate normalized x for the reason's comment, 0–1    |
+| `--y`              | number | Approximate normalized y for the reason's comment, 0–1    |
 
 ## agent create-diff-comment / agent reply-to-diff-comment
 
@@ -166,7 +197,7 @@ reply_to_diff_comment(commentId="<id>", text="...")
 
 **Purpose:** Start a review comment thread on a screenshot diff at required approximate normalized coordinates, or reply to an existing root comment. Replies inherit the root thread's anchor, so they take no `--x`/`--y`. Each command outputs the created comment or reply ID (`{ commentId }` with `--json`). Keep comment text succinct, ideally 1–3 sentences.
 
-Each call adds another comment, same as `reject-diff`/`ignore-diff` — none of them are idempotent.
+Each call adds another comment, same as `reject-diff`/`ignore-diff` (and `approve-diff` with a reason) — none of them are idempotent.
 
 ## agent image-urls / agent image-files
 
@@ -259,14 +290,21 @@ On MCP, `get_test_run_check` does not poll internally — poll it yourself every
 meticulous agent js-coverage --testRunId=<id>          # or --commitSha=<sha>
 meticulous agent js-coverage --latestForProject
 meticulous agent js-coverage --replayId=<id>
+meticulous agent js-coverage --summary                 # aggregate totals, not the per-file list
+meticulous agent js-coverage --orderBy=uncoveredLines --limit=50
+meticulous agent js-coverage --limit=1000 --offset=1000  # the next page
 
 # MCP
 get_test_run_js_coverage(testRunId="<id>")
 get_project_js_coverage()
 get_replay_js_coverage(replayId="<id>")
+get_test_run_js_coverage_summary(testRunId="<id>")
+get_project_js_coverage_summary()
 ```
 
 **Purpose:** Per-file JavaScript coverage for a whole test run, a single replay, a combined set of runs, or a project's latest successful run. Outputs a TSV table keyed on `repoFilePath` plus the requested columns.
+
+**Output is paged: the first 100 files unless `--limit` says otherwise (1-1000), ordered by `--orderBy`.** Each call reports which rows you got and whether more exist, so a page can never be mistaken for the whole set; page with `--offset` when you genuinely need every file. There is no unlimited mode — when every row seems necessary, one of `--summary` (the run's aggregate, read directly rather than summed from rows), `--orderBy` (the worst files first) or `--globFilter` (one directory) is usually the question you actually wanted.
 
 A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its selected sessions on demand, so while any of them could still be replayed its coverage understates the commit and this is refused, saying how many are missing. Either replay the rest with [`complete-base-run`](#agent-complete-base-run) and ask again, or pass `--latestForProject` for the project's overall coverage. A run that has replayed everything it can answers normally — a small share of the set being permanently unreplayable (a chunk that finished without reporting some of its sessions) is tolerated rather than blocking the commit forever, and above that share the refusal says so and that completing the run cannot help.
 
@@ -277,10 +315,14 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 | `--replayId`                                                                             | string  | Coverage for a single replay                                                                                                                                                   |
 | `--screenshotName`                                                                       | string  | Restrict to a single screenshot of the replay                                                                                                                                  |
 | `--headPlusTestRunIds` / `--testRunIds`                                                  | string  | Comma-separated run IDs to union coverage across (same project + commit)                                                                                                       |
-| `--globFilter`                                                                           | string  | Only include files matching the glob                                                                                                                                           |
+| `--globFilter`                                                                           | string  | Only include files matching the glob; repeatable, matching any of several                                                                                                      |
 | `--includeAllFiles`                                                                      | boolean | Include files with no coverage too                                                                                                                                             |
 | `--prDiffOnly`                                                                           | boolean | Restrict to files changed in the PR (test-run queries only)                                                                                                                    |
 | `--includeExecutableRanges` / `--includeUncoveredRanges` / `--includeCoveragePercentage` | boolean | Add richer per-file coverage columns                                                                                                                                           |
+| `--includeLineCounts`                                                                    | boolean | Add `executedLines`/`executableLines`/`uncoveredLines` counts — far smaller than the equivalent ranges, so use these to triage then ask for ranges on the files that matter    |
+| `--orderBy` / `--order`                                                                  | string  | Order rows by `repoFilePath`, `executedLines`, `executableLines`, `uncoveredLines` or `coveragePercentage`; the numeric fields default to descending                           |
+| `--limit` / `--offset`                                                                   | number  | Page the output. `--limit` is 1-1000, default 100; the notice on stderr says whether more rows exist                                                                           |
+| `--summary`                                                                              | boolean | Report the run's aggregate totals instead of the per-file list; incompatible with the column, row-filter, ordering and paging options                                          |
 | `--dontWaitForTestRunToComplete`                                                         | boolean | Report an in-progress run and exit immediately instead of waiting                                                                                                              |
 
 ## agent js-coverage-diff
@@ -288,12 +330,24 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 ```bash
 # CLI
 meticulous agent js-coverage-diff --replayDiffId=<id> [--screenshotName=<name>] [--globFilter=<glob>]
+meticulous agent js-coverage-diff                      # the current commit's run, against its base
+meticulous agent js-coverage-diff --testRunId=<id> --summary
 
 # MCP
 get_replay_diff_js_coverage_diff(replayDiffId="<id>")
+get_test_run_js_coverage_diff(testRunId="<id>")
+get_test_run_js_coverage_diff_summary(testRunId="<id>")
 ```
 
-**Purpose:** Per-file JS coverage diff for a replay diff. Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`).
+**Purpose:** Per-file JS coverage diff, either for one replay pair (`--replayDiffId`) or for a whole test run against the base run it was compared against. Outputs a TSV table (`repoFilePath`, `status`, `baseRanges`, `headRanges`); files whose executed lines match exactly are absent.
+
+The whole-run form is the default: a bare invocation diffs the run for your current commit, and the base is resolved from that run rather than named by you. `--summary` (MCP: the separate `get_test_run_js_coverage_diff_summary` tool) reports the aggregate difference instead of the list — files added/removed/modified, each side's executed line count, and how many lines the run newly covers (`uniqueLinesAdded`) or no longer covers (`regressedLines`) — and skips computing the per-file rows entirely.
+
+Two things it refuses, both as plain errors saying what to ask for instead: a run that **is** a base run (a default-branch checkout resolves to one) has no base of its own, and a run triggered outside a PR was never compared against one. If the base run hasn't replayed its whole selected set yet, the error names `complete-base-run --testRunId=<base>` — diffing against a partly-replayed base would report coverage as new when it was only unmeasured.
+
+The two sides are different commits whenever the change altered anything, so in a file the change edited a `modified` row may be its lines having shifted rather than its coverage having changed. `baseExecutionSha` on the response says which commit the base side's line numbers reference; unedited files, and the added/removed rows, are unaffected.
+
+Both scopes page the per-file list with `--limit` (1-1000, default 100) and `--offset`, and each call says which rows you got and whether more exist.
 
 ## agent sessions
 
@@ -396,6 +450,27 @@ This costs a full test run's replays, so reach for it when you want this commit'
 | `--testRunId`                    | string  | —                | The base run to complete                                       |
 | `--commitSha`                    | string  | current git HEAD | Complete the latest run for this commit instead                |
 | `--dontWaitForTestRunToComplete` | boolean | `false`          | Return once the replays are scheduled instead of awaiting them |
+
+## agent promote-sessions
+
+```bash
+# CLI
+meticulous agent promote-sessions --testRunId=<id> [--sessionIds=<id1>,<id2>]
+
+# MCP
+promote_sessions(testRunId="<id>", sessionIds=["<id1>", "<id2>"])
+```
+
+**Purpose:** Add sessions you recorded to the project's selected set now, instead of waiting for the next session selection to pick them up. `--testRunId` is the run you triggered over those sessions with `trigger-test-run --sessionIds` against your default branch's HEAD: it is the evidence they replay, so it must have finished and every session promoted must have replayed in it. That commit must have a finished base run on the same build that has replayed its whole selected set — run [`complete-base-run`](#agent-complete-base-run) first if it hasn't. If any of that doesn't hold, nothing is promoted. Omit `--sessionIds` to promote all of its sessions. Outputs `promotedSessionIds`, `alreadySelectedSessionIds` and `updatedBaseTestRunId`.
+
+`updatedBaseTestRunId` is the commit's updated base run: its base run plus the promoting run's replays of the promoted sessions. It takes a few minutes to post-process, and until then [`test-run-for-commit`](#agent-test-run-for-commit) still resolves to the old base run, so a plain `js-coverage` right after promoting returns coverage without the promoted sessions. Pass the id explicitly (`js-coverage --testRunId=<updatedBaseTestRunId>`, which waits for it to finish) to read the new figure straight away; once it has finished, the commit resolves to it. It is empty when nothing was newly promoted, or when building it failed after the promotion; the notice on stderr then says to union the promoting run in with `js-coverage --headPlusTestRunIds` instead.
+
+Promoting an already-selected session is a no-op, reported under `alreadySelectedSessionIds`. It is refused for a run that wasn't triggered over explicit sessions or hasn't finished, for a commit without such a complete base run (or whose base run executed a different build), for a session the run didn't replay, for a session banned from session selection, for a project with automatic session selection disabled (its runs replay only manually selected sessions, so a promoted one would never run), for more than 20 sessions in one call, and when agents have already promoted 10% of the project's configured selected-set size since the last session selection.
+
+| Option         | Type   | Default                | Description                                  |
+| -------------- | ------ | ---------------------- | -------------------------------------------- |
+| `--testRunId`  | string | —                      | The run you triggered over the sessions      |
+| `--sessionIds` | string | all the run's sessions | Comma-separated subset of the run's sessions |
 
 ## agent submit-feedback
 

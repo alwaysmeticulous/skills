@@ -117,10 +117,11 @@ meticulous auth list-projects
 meticulous auth logout
 ```
 
-**Purpose:** Clear all stored OAuth tokens from disk, effectively logging out.
+**Purpose:** Revoke the session at the identity provider and clear all stored OAuth tokens from disk, effectively logging out.
 
 **Effects:**
 
+- Revokes the stored refresh token at the identity provider, so the session behind it can no longer be refreshed from any other copy of the token. If that call fails (offline, issuer unreachable) logout warns and still completes — the local tokens are cleared either way, but the session stays valid until it expires
 - Deletes the cached OAuth token file used by the CLI
 - Subsequent commands that require authentication will prompt for login again
 - Clears **only** OAuth tokens: a `METICULOUS_API_TOKEN` env var or an `apiToken` in `~/.meticulous/config.json` survives and keeps being used — logout warns about each and they have to be removed by hand
