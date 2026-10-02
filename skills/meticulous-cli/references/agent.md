@@ -18,6 +18,8 @@ Accepted by every `agent` command (in addition to the [global options](../SKILL.
 
 Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run-diffs`, `js-coverage`, `trigger-test-run`, `complete-base-run`) also accept `--project <id | org/name | name>` — a one-off override of your default project for that call only (it does not change the stored default; see [`auth`](auth.md)).
 
+The commands that read a test run (`test-run-for-commit`, `test-run-diffs`, `test-run-check`, `js-coverage`, `js-coverage-diff`) pick it in one of three ways: by default the latest run for your current git HEAD, or explicitly with `--testRunId`, `--commitSha` or `--prNumber` (pass at most one). `--prNumber` resolves to the latest run for the pull request's head commit, exactly as `--commitSha` would for that commit. On MCP, `get_test_run_for_commit` takes `prNumber` in place of `commitSha`, and the test-run tools take `prNumber` (plus an optional `project`) in place of `testRunId`.
+
 ## Command → MCP tool overview
 
 | Command                          | Purpose                                                                     | MCP tool                                                                                                                         |
@@ -37,11 +39,18 @@ Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run
 | `timeline-diff`                  | Timeline event diffs for a replay diff                                      | `get_timeline_diff`                                                                                                              |
 | `test-run-check`                 | Get the Markdown report for a non-visual check                              | `get_test_run_check`                                                                                                             |
 | `test-run-check --availableIds`  | List the check IDs available for a test run                                 | `get_test_run_check_available_ids`                                                                                               |
+| `check-comments`                 | Review comments for a non-visual check                                      | `get_check_comments`                                                                                                             |
+| `reject-check`                   | Reject a failing check (real, blocking decision) and comment why            | `reject_check`                                                                                                                   |
+| `approve-check`                  | Approve a failing check, optionally commenting why (opt-in per project)     | `approve_check`                                                                                                                  |
+| `ignore-check`                   | Say a failing check is unrelated, e.g. a flake (opt-in per project)         | `ignore_check`                                                                                                                   |
+| `create-check-comment`           | Start a review comment thread on a check                                    | `create_check_comment`                                                                                                           |
+| `reply-to-check-comment`         | Reply to a check review comment thread                                      | `reply_to_check_comment`                                                                                                         |
 | `js-coverage --testRunId`        | Per-file JS coverage for a test run                                         | `get_test_run_js_coverage`                                                                                                       |
 | `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                  | `get_project_js_coverage`                                                                                                        |
 | `js-coverage --replayId`         | Per-file JS coverage for a replay                                           | `get_replay_js_coverage`                                                                                                         |
 | `js-coverage-diff`               | Per-file JS coverage diff for a replay diff, or a test run against its base | `get_replay_diff_js_coverage_diff` / `get_test_run_js_coverage_diff`                                                             |
 | `sessions`                       | List a project's recently recorded sessions                                 | `get_sessions`                                                                                                                   |
+| `test-runs`                      | List a project's PR test runs (or base test runs), newest first             | `get_test_runs`                                                                                                                  |
 | `upload-build`                   | Upload a build, register a deployment                                       | `request_asset_upload` + `register_asset_build` (assets), or `request_container_upload` + `register_container_build` (container) |
 | `trigger-test-run`               | Trigger a run against a deployment                                          | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
 | `complete-base-run`              | Replay the sessions a base run has not run yet                              | `complete_base_run` (returns once scheduled — does not wait for completion)                                                      |
@@ -56,39 +65,43 @@ For full, always-current option lists, run `meticulous schema agent <command>`.
 
 ```bash
 # CLI
-meticulous agent test-run-for-commit [--commitSha=<sha>] [--project=<project>]
+meticulous agent test-run-for-commit [--commitSha=<sha> | --prNumber=<n>] [--project=<project>]
 
 # MCP
-get_test_run_for_commit(commitSha="<sha>")
+get_test_run_for_commit(commitSha="<sha>")   # or prNumber=<n>
 ```
 
-**Purpose:** Look up the latest test run for a commit (defaults to the current git HEAD) and output the `testRunId`.
+**Purpose:** Look up the latest test run for a commit (defaults to the current git HEAD) or a pull request's head commit, and output the `testRunId`.
+
+A finished run's status is `Success` when it found no diffs and `Failure` when it found some. `Failure` does not mean the run broke: a run that couldn't complete ends as `ExecutionError` or `Aborted` instead.
 
 A base run is one other test runs compare against rather than a run of its own — the usual outcome for a commit on your default branch. It has no diffs and no PR, so `test-run-diffs` and `test-run-check` reject it, and it replays its selected sessions on demand, so `js-coverage` works on it only once it has replayed everything it can (see [`complete-base-run`](#agent-complete-base-run)).
 
 | Option                           | Type    | Default          | Description                                                       |
 | -------------------------------- | ------- | ---------------- | ----------------------------------------------------------------- |
 | `--commitSha`                    | string  | current git HEAD | Commit to look up the run for                                     |
+| `--prNumber`                     | number  | —                | Look up the run for this pull request's head commit instead       |
 | `--dontWaitForTestRunToComplete` | boolean | `false`          | Report an in-progress run and exit immediately instead of waiting |
 
 ## agent test-run-diffs
 
 ```bash
 # CLI
-meticulous agent test-run-diffs [--testRunId=<id> | --commitSha=<sha>] [options]
-meticulous agent test-run-diffs --counts [--testRunId=<id> | --commitSha=<sha>]
+meticulous agent test-run-diffs [--testRunId=<id> | --commitSha=<sha> | --prNumber=<n>] [options]
+meticulous agent test-run-diffs --counts [--testRunId=<id> | --commitSha=<sha> | --prNumber=<n>]
 
 # MCP
-get_test_run_diffs(testRunId="<id>")
-get_test_run_diffs_counts(testRunId="<id>")
+get_test_run_diffs(testRunId="<id>")          # or prNumber=<n>
+get_test_run_diffs_counts(testRunId="<id>")   # or prNumber=<n>
 ```
 
 **Purpose:** List the screenshot diffs for a test run — by default a selected, priority-ordered subset of representative visual differences (position in the list is the priority signal, there is no `index` column). Outputs a TSV table (`replayDiffId`, `screenshotName`, plus requested columns; `mismatchFraction` is opt-in via `--includeMismatchFraction`). See the `meticulous-review` skill for the full workflow and column semantics.
 
 | Option                           | Type    | Default          | Description                                                                                                                  |
 | -------------------------------- | ------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `--testRunId`                    | string  | —                | Target run explicitly (else resolved from `--commitSha`, else git HEAD)                                                      |
+| `--testRunId`                    | string  | —                | Target run explicitly (else resolved from `--commitSha` / `--prNumber`, else git HEAD)                                       |
 | `--commitSha`                    | string  | current git HEAD | Resolve the latest run for this commit                                                                                       |
+| `--prNumber`                     | number  | —                | Resolve the latest run for this pull request's head commit                                                                   |
 | `--includeAllDiffs`              | boolean | `false`          | Return every difference, not just the selected subset; adds an `isSelected` column                                           |
 | `--onlyUnreviewed`               | boolean | `false`          | Only diffs still awaiting review (implies `--includeAllDiffs`)                                                               |
 | `--onlyRejected`                 | boolean | `false`          | All rejected diffs, human- or agent-rejected — the complete set of issues requiring fixes (implies `--includeAllDiffs`)      |
@@ -130,19 +143,20 @@ get_diff_comments(replayDiffId="<id>", screenshotName="<name>")
 ```bash
 # CLI
 meticulous agent reject-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1>
-meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1>
+meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why>" --x=<0..1> --y=<0..1> [--reportFlake]
 
 # MCP
 reject_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
-ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>)
+ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why>", x=<0..1>, y=<0..1>, reportFlake=<true|false>)
 ```
 
 **Purpose:** Record an agent's verdict on one screenshot difference, backed by a review comment containing a succinct reason at required approximate normalized coordinates. Returns the created comment's `id`.
 
 - **`reject-diff`** writes a real `rejected` decision — the same `decision` a human rejection would write, blocking the check identically, and replacing whatever decision (human or agent) was there before.
-- **`ignore-diff`** states the agent's view that the diff is unrelated to the change under review — typically a flake (subpixel rendering noise, animation non-determinism). What it records depends on the project:
+- **`ignore-diff`** states the agent's view that the diff is unrelated to the change under review: one the change has no plausible way to cause, such as rendering noise, an animation at a different frame, or a server-rendered timestamp. The `meticulous-review` skill's Step 5 has the full rule, including what never to ignore. What it records depends on the project:
   - **By default it decides nothing.** It only posts the comment; the diff stays `unreviewed` and the check stays pending. That is deliberate: without the project's opt-in, no holder of a project write token can green their own pull request — an agent can escalate a diff (reject) but never clear one.
   - **With Enable approve/ignore diff actions** turned on (project settings → Agents), it writes a real, non-blocking `ignored` decision, the same as a human ignoring the diff — except on a diff a person rejected, where it is refused with a 409 (see `approve-diff`).
+- **`--reportFlake`** (`ignore-diff` only) also reports the diff to Meticulous to investigate as a likely replay-engine bug: pass it when the replay was nondeterministic where Meticulous should have made it deterministic (rendering, animations, timers, dates, randomness, network ordering, or a replay that took a different path), not for a genuine difference in what the app served. It is filed whether or not the ignore records a decision, and a repeat for the same diff files nothing new.
 
 The test run must be a pull request run, or a custom-trigger run — the run you triggered yourself, where the decision is recorded against the run itself. Any other run (a plain push or crawler run, or an internal pull request run that isn't shown to users) is refused for `reject-diff`, `ignore-diff` and `approve-diff`, and for `create-diff-comment` and `reply-to-diff-comment` too — even where `ignore-diff` would only have commented.
 
@@ -255,26 +269,27 @@ get_timeline_diff(replayDiffId="<id>")
 
 ```bash
 # CLI
-meticulous agent test-run-check --checkId=<id> [--checkType=builtin|custom] [--testRunId=<id> | --commitSha=<sha>]
-meticulous agent test-run-check --availableIds [--testRunId=<id> | --commitSha=<sha>]
+meticulous agent test-run-check --checkId=<id> [--checkType=builtin|custom] [--testRunId=<id> | --commitSha=<sha> | --prNumber=<n>]
+meticulous agent test-run-check --availableIds [--testRunId=<id> | --commitSha=<sha> | --prNumber=<n>]
 
 # MCP
-get_test_run_check(testRunId="<id>", checkId="<id>")
-get_test_run_check_available_ids(testRunId="<id>")
+get_test_run_check(testRunId="<id>", checkId="<id>")       # or prNumber=<n> in place of testRunId
+get_test_run_check_available_ids(testRunId="<id>")         # or prNumber=<n>
 ```
 
 **Purpose:** Get the Markdown report for a builtin or customer-reported non-visual check on a test run, or — with `--availableIds` — list the check IDs that have reported results so far instead of fetching a report.
 
 Report mode prints the report text; `--availableIds` prints a TSV table with columns `checkType` and `checkId` (MCP: a list of objects with those two attributes).
 
-A report result is `{ status: 'processing' }` while results have not been reported yet — poll every 10s until `complete`, for at most 3 minutes; if it's still `processing` then, stop and tell the user the results have not arrived rather than polling on. Once complete it's `{ status: 'complete', text }`; a `{ status: 'failed', reason }` result is final — there is no way to retry. For `--checkType custom`, an error saying the run is not expecting custom check results can be transient shortly after the run completes, since the customer's own CI registers its checks separately: retry for a minute or so before concluding the run has no custom checks.
+A report result is `{ status: 'processing' }` while results have not been reported yet — poll every 10s until `complete`, for at most 10 minutes (the CLI does this itself); if it's still `processing` then, stop and tell the user the results have not arrived rather than polling on. Once complete it's `{ status: 'complete', text }`; a `{ status: 'failed', reason }` result is final — there is no way to retry. For `--checkType custom`, an error saying the run is not expecting custom check results can be transient shortly after the run completes, since the customer's own CI registers its checks separately: retry for a minute or so before concluding the run has no custom checks.
 
-`--availableIds` (MCP: `get_test_run_check_available_ids`) never waits for the test run or its checks to finish, unlike fetching a report — it returns whatever check IDs have reported results so far. An empty list shortly after triggering a run can mean the checks simply haven't reported yet rather than that none exist, so retry for a minute or so (the same budget a report fetch gives itself) before concluding the run has no checks.
+`--availableIds` (MCP: `get_test_run_check_available_ids`) never waits for the test run or its checks to finish, unlike fetching a report — it returns whatever check IDs have reported results so far. An empty list shortly after triggering a run can mean the checks simply haven't reported yet rather than that none exist, so retry every 10s for up to 10 minutes (the same budget a report fetch gives itself) before concluding the run has no checks. On a project that isn't set up for checks at all, it is refused outright instead.
 
 | Option                           | Type    | Default          | Description                                                                                                                                                                      |
 | -------------------------------- | ------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--testRunId`                    | string  | —                | Target run explicitly (else resolved from `--commitSha`, else git HEAD)                                                                                                          |
+| `--testRunId`                    | string  | —                | Target run explicitly (else resolved from `--commitSha` / `--prNumber`, else git HEAD)                                                                                           |
 | `--commitSha`                    | string  | current git HEAD | Resolve the latest run for this commit                                                                                                                                           |
+| `--prNumber`                     | number  | —                | Resolve the latest run for this pull request's head commit                                                                                                                       |
 | `--project`                      | string  | default project  | One-off override (id, `org/proj`, or `proj`); cannot be combined with `--testRunId`                                                                                              |
 | `--checkType`                    | string  | `builtin`        | `builtin` for a Meticulous-provided check, or `custom` for a customer-reported check                                                                                             |
 | `--checkId`                      | string  | —                | The check ID; required unless `--availableIds` is set. Use `--availableIds` to discover it                                                                                       |
@@ -283,11 +298,48 @@ A report result is `{ status: 'processing' }` while results have not been report
 
 On MCP, `get_test_run_check` does not poll internally — poll it yourself every 10s until `status` is `complete` or `failed` (final — no retry).
 
+## agent reject-check / agent approve-check / agent ignore-check
+
+```bash
+# CLI
+meticulous agent reject-check (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] --reason="<why>"
+meticulous agent approve-check (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] [--reason="<why>"]
+meticulous agent ignore-check (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] --reason="<why>"
+
+# MCP
+reject_check(testRunId="<id>", checkId="<id>", checkType="builtin", reason="<why>")
+approve_check(testRunId="<id>", checkId="<id>")
+ignore_check(testRunId="<id>", checkId="<id>", reason="<why>")
+```
+
+**Purpose:** Record an agent's verdict on one failing non-visual check — the check counterpart of `reject-diff` / `approve-diff` / `ignore-diff`. Only a check that reported `warn-and-require-user-ack` can be reviewed. The reason is stored as a check review comment prefixed with the verdict (e.g. `Verdict: reject`), and the command returns that comment's `id` (`approve-check` without `--reason` writes no comment and returns nothing). On MCP, `prNumber` (plus an optional `project`) can stand in for `testRunId`.
+
+- **`reject-check`** writes a real `rejected` review, blocking the pull request's checks status exactly like a human rejection.
+- **`approve-check`** and **`ignore-check`** need **Enable approve/ignore check actions** (project settings → Agents; shown only for projects with checks). Without it both are refused — unlike `ignore-diff`, there is no comment-only fallback. Neither ever clears a check a person rejected (409).
+
+Reviews are scoped to the one test run — a re-run starts unreviewed. Repeating the current verdict adds only the new comment; a changed verdict resolves the replaced verdict's comment thread.
+
+## agent check-comments / agent create-check-comment / agent reply-to-check-comment
+
+```bash
+# CLI
+meticulous agent check-comments (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] [--includeResolved]
+meticulous agent create-check-comment (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] --text="..."
+meticulous agent reply-to-check-comment --commentId=<id> --text="..."
+
+# MCP
+get_check_comments(testRunId="<id>", checkId="<id>")
+create_check_comment(testRunId="<id>", checkId="<id>", text="...")
+reply_to_check_comment(commentId="<id>", text="...")
+```
+
+**Purpose:** Read, start and answer review comment threads on a non-visual check. Unlike diff comments they carry no coordinates. `check-comments` prints a TSV table with columns `id`, `replyToCommentId`, `author`, `isAgentAuthored`, `text` (MCP: a list of root comments with `replies`).
+
 ## agent js-coverage
 
 ```bash
 # CLI
-meticulous agent js-coverage --testRunId=<id>          # or --commitSha=<sha>
+meticulous agent js-coverage --testRunId=<id>          # or --commitSha=<sha> / --prNumber=<n>
 meticulous agent js-coverage --latestForProject
 meticulous agent js-coverage --replayId=<id>
 meticulous agent js-coverage --summary                 # aggregate totals, not the per-file list
@@ -310,7 +362,7 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 
 | Option                                                                                   | Type    | Description                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--testRunId` / `--commitSha`                                                            | string  | Coverage for a test run (defaults to the current git HEAD)                                                                                                                     |
+| `--testRunId` / `--commitSha` / `--prNumber`                                             | string  | Coverage for a test run (defaults to the current git HEAD; `--prNumber` is the pull request's head commit)                                                                     |
 | `--latestForProject`                                                                     | boolean | Coverage for the project's preferred latest successful test run (the same run the webapp's project coverage view uses); mutually exclusive with the other run-selector options |
 | `--replayId`                                                                             | string  | Coverage for a single replay                                                                                                                                                   |
 | `--screenshotName`                                                                       | string  | Restrict to a single screenshot of the replay                                                                                                                                  |
@@ -331,7 +383,7 @@ A base run (see [`test-run-for-commit`](#agent-test-run-for-commit)) replays its
 # CLI
 meticulous agent js-coverage-diff --replayDiffId=<id> [--screenshotName=<name>] [--globFilter=<glob>]
 meticulous agent js-coverage-diff                      # the current commit's run, against its base
-meticulous agent js-coverage-diff --testRunId=<id> --summary
+meticulous agent js-coverage-diff --testRunId=<id> --summary   # or --commitSha=<sha> / --prNumber=<n>
 
 # MCP
 get_replay_diff_js_coverage_diff(replayDiffId="<id>")
@@ -377,6 +429,38 @@ get_sessions()
 
 ---
 
+## agent test-runs
+
+```bash
+# CLI
+meticulous agent test-runs [options]
+
+# MCP
+get_test_runs()
+```
+
+**Purpose:** List every pull request test run of a project, newest first (default: 100) — a PR with several commits or re-runs appears once per run. Use it to find every run of a PR (`--prNumber`), then pass a run's `id` to `test-run-diffs`. `--latestPerPullRequest` keeps only each PR's newest run, as the web app's test-runs tab lists them. With `--baseTestRuns` it lists the runs without a PR instead: the pushes to a branch that PR runs are compared against, often in status `Partial`. Outputs a TSV table (`id`, `createdAt`, `status`, `commitSha`, `prNumber`, plus requested columns; `prNumber` is dropped under `--baseTestRuns`, and empty when you lack access to the project's PR data).
+
+| Option                              | Type    | Default         | Description                                                                                          |
+| ----------------------------------- | ------- | --------------- | ---------------------------------------------------------------------------------------------------- |
+| `--project`                         | string  | default project | One-off override (id, `org/proj`, or `proj`)                                                         |
+| `--prNumber`                        | string  | —               | Only the runs of this PR (or MR) number                                                              |
+| `--latestPerPullRequest`            | boolean | `false`         | Only each PR's newest run, as on the web app's test-runs tab (not with `--baseTestRuns`)             |
+| `--baseTestRuns`                    | boolean | `false`         | List the runs without a PR instead (not with `--prNumber`)                                           |
+| `--status`                          | string  | —               | Comma-separated statuses, e.g. `Failure` (found differences) or `Success`                            |
+| `--withDiffsOnly`                   | boolean | `false`         | Only runs that found differences (not with `--status`)                                               |
+| `--withCheckIssuesOnly`             | boolean | `false`         | Only runs where a builtin check failed or warned (not with `--baseTestRuns`)                         |
+| `--checkIds`                        | string  | —               | With `--withCheckIssuesOnly`, only these comma-separated builtin checks                              |
+| `--createdSince` / `--createdUntil` | string  | —               | ISO-8601 date/time bounds on creation time                                                           |
+| `--includeBaseTestRunId`            | boolean | `false`         | Add the run it was compared against (not with `--baseTestRuns`)                                      |
+| `--includeDiffCount`                | boolean | `false`         | Add the web app's "N differences" count (`Success`/`Failure` runs only; not with `--baseTestRuns`)   |
+| `--includeCheckIssueCounts`         | boolean | `false`         | Add builtin `checkWarningCount` / `checkFailureCount`; failures need acknowledgement, warnings don't |
+| `--includeDurationSeconds`          | boolean | `false`         | Add the seconds the run spent running (not with `--baseTestRuns`)                                    |
+| `--limit`                           | number  | `100`           | 1–1000, or 1–100 with `--includeBaseTestRunId` / `--includeDiffCount`                                |
+| `--offset`                          | number  | `0`             | —                                                                                                    |
+
+---
+
 ## agent upload-build
 
 ```bash
@@ -395,7 +479,6 @@ register_asset_build(uploadId="<id>", commitSha="<sha>")      # or register_cont
 | Option                                                                  | Type    | Description                                         |
 | ----------------------------------------------------------------------- | ------- | --------------------------------------------------- |
 | `--appDirectory`                                                        | string  | Build output directory (static-assets mode)         |
-| `--appZip`                                                              | string  | Zipped build, as an alternative to `--appDirectory` |
 | `--localImageTag`                                                       | string  | Local Docker image tag (container mode)             |
 | `--containerPort` / `--containerEnv` / `--containerHealthCheckEndpoint` | —       | Container runtime configuration                     |
 | `--rewrites`                                                            | string  | Static-asset rewrite rules                          |
@@ -416,16 +499,17 @@ trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 
 **Purpose:** Trigger a test run against a deployment from `agent upload-build`, comparing against a base. Outputs the `testRunId`. A base is required (auto-inferred from the repo, or set via `--baseSha`). Omit `--deploymentId` to reuse the most recent deployment for the local HEAD commit (requires a clean working tree). See the `meticulous-test`, `meticulous-zero-diff-task`, or `meticulous-increase-coverage` skill.
 
-| Option                           | Type    | Default             | Description                                                  |
-| -------------------------------- | ------- | ------------------- | ------------------------------------------------------------ |
-| `--deploymentId`                 | string  | latest for HEAD     | Deployment to run against                                    |
-| `--commitSha`                    | string  | current git HEAD    | Resolve the most recent deployment for this commit           |
-| `--baseSha`                      | string  | inferred merge-base | Base commit to compare against                               |
-| `--gitDiffOutput`                | string  | inferred            | Explicit git diff, paired with `--baseSha`                   |
-| `--sessionIds`                   | string  | project golden set  | Comma-separated session IDs to replay for both base and head |
-| `--maxDurationSeconds`           | number  | —                   | Cap the run's duration                                       |
-| `--dontWaitForTestRunToComplete` | boolean | `false`             | Return as soon as the run is triggered                       |
-| `--dryRun`                       | boolean | `false`             | Print what would be triggered without doing it               |
+| Option                           | Type    | Default             | Description                                                                                                                                                                |
+| -------------------------------- | ------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--deploymentId`                 | string  | latest for HEAD     | Deployment to run against                                                                                                                                                  |
+| `--commitSha`                    | string  | current git HEAD    | Resolve the most recent deployment for this commit                                                                                                                         |
+| `--baseSha`                      | string  | inferred merge-base | Base commit to compare against                                                                                                                                             |
+| `--gitDiffOutput`                | string  | inferred            | Explicit git diff, paired with `--baseSha`                                                                                                                                 |
+| `--sessionIds`                   | string  | project golden set  | Comma-separated session IDs to replay for both base and head                                                                                                               |
+| `--maxDurationSeconds`           | number  | —                   | Cap the run's duration                                                                                                                                                     |
+| `--runBuiltinChecks`             | boolean | `false`             | Also run the project's enabled builtin checks on the run; read them with `test-run-check`. Rejected when none are enabled. Has no effect without a base to compare against |
+| `--dontWaitForTestRunToComplete` | boolean | `false`             | Return as soon as the run is triggered                                                                                                                                     |
+| `--dryRun`                       | boolean | `false`             | Print what would be triggered without doing it                                                                                                                             |
 
 `deploymentId` on MCP comes from `register_asset_build`/`register_container_build`. `baseSha`/`gitDiffOutput` are never inferred on MCP — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly.
 

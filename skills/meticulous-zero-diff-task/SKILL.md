@@ -53,7 +53,7 @@ Inspect the diffs using the mechanics from the `meticulous-review` skill (Steps 
 2. **One or more diffs** — for each one, look at the screenshot images and DOM diff (as in the `meticulous-review` skill's Steps 2-3) to understand exactly what changed and why, using the timeline (Step 4 there) if the cause isn't obvious from the DOM/images alone. Then classify it:
    - **Regression (the default assumption)** — a real side effect of your change.
    - **Acceptable** — you can positively explain it as an intended, unavoidable consequence of the task itself (e.g. a version-string footer changing as part of a version upgrade). Be conservative here — for a low-diff task there may genuinely be a handful of these; for a strict no-diff task there normally shouldn't be any. Don't file anything on these yet — hold off until Step 6, where the note gets filed against the PR's own CI-triggered run rather than a provisional local iteration.
-   - **Unrelated to your change** — typically a flake, e.g. subpixel rendering noise or animation non-determinism. Not a label for a diff you can't explain: if your change plausibly caused it, it belongs in one of the other buckets.
+   - **Unrelated to your change** — a diff your change has no plausible way to cause, as defined under "What counts as unrelated" in the `meticulous-review` skill's Step 5: typically rendering noise, an animation at a different frame, late-loading fonts or images, or environment noise such as a server-rendered timestamp. Not a label for a diff you can't explain: if your change plausibly caused it, it belongs in one of the other buckets.
    - **Can't fix, and can't confidently justify either** — don't get stuck looping over it.
 
 For a **regression**, reject it right away so there's a paper trail as you go — even though you're both reviewer and implementer here:
@@ -86,7 +86,7 @@ Once the run is clean (or every remaining diff is accounted for), commit any out
 
 In the PR description:
 
-- Summarize the task and, briefly, the Meticulous result: e.g. "Verified via Meticulous: no visual differences across the golden set" or, if some diffs remain, a short list of what they are and why they're expected/unavoidable — link each one: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
+- Summarize the task and, briefly, the Meticulous result (including any failing non-visual checks from Step 6, once the PR's own run reports them): e.g. "Verified via Meticulous: no visual differences across the golden set" or, if some diffs remain, a short list of what they are and why they're expected/unavoidable — link each one: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
 - **Author credit:** if the PR description already credits an AI coding assistant as (co-)author (e.g. "Created by Claude Code", "Co-authored-by: Cursor", "🤖 Generated with Claude Code"), add "and Meticulous" to that mention — e.g. "Created by Claude Code and Meticulous" — since Meticulous drove the implementation loop, not just a final check. Don't add a Meticulous author credit if no such line already exists; there's nothing to append it to.
 
 ## Step 6 -- Confirm the PR's own test run matches
@@ -101,6 +101,8 @@ meticulous agent test-run-diffs
 get_test_run_for_commit(commitSha="<sha>")
 get_test_run_diffs(testRunId="<id>")
 ```
+
+Instead of resolving from HEAD you can also name the run with `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (on MCP, `get_test_run_diffs(prNumber=<n>)` directly).
 
 If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.
 
@@ -118,13 +120,23 @@ Use `ignore-diff` **only** for a Step 4 **unrelated** diff — one that has noth
 
 ```bash
 # CLI
-meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why it's unrelated>" --x=<0..1> --y=<0..1>
+meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reason="<why it's unrelated>" --x=<0..1> --y=<0..1> [--reportFlake]
 
 # MCP
-ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's unrelated>", x=<0..1>, y=<0..1>)
+ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's unrelated>", x=<0..1>, y=<0..1>, reportFlake=<true|false>)
 ```
 
+Add `--reportFlake` when the replay itself was nondeterministic where Meticulous should have made it deterministic (see "Report likely engine bugs" in the `meticulous-review` skill's Step 5), so Meticulous investigates it as a likely replay-engine bug.
+
 A comment decides nothing — the diff stays `unreviewed` and the check stays pending — but your reasoning is on record for the human reviewing the PR.
+
+**Non-visual checks (only if the PR's run has any).** Find out with `meticulous agent test-run-check --availableIds`. If it is refused because the project isn't set up for checks, or lists nothing, skip this. Otherwise handle each failing check as in the `meticulous-review` skill's Step 7, but classify it with Step 4's rule: for a no-diff task, a failing check is a **regression** until proven otherwise.
+
+- **Regression**: fix it and go back to Step 3. If you can't fix it, `reject-check` it with a reason.
+- **Unrelated to your change**: `ignore-check` it with a reason.
+- **Acceptable**: `approve-check` it with a reason.
+
+`approve-check` and `ignore-check` need the project's **Enable approve/ignore check actions** setting. Where they're refused, leave the check undecided. A check's reason is stored but never shown to people in the Meticulous app, so also list every failing check, with your verdict and reasoning, in the PR description.
 
 ## Step 7 -- Report feedback to Meticulous
 
