@@ -1,6 +1,6 @@
 ---
 name: meticulous-fix
-description: Fix the visual diffs that have been reviewed and rejected on a Meticulous test run, following their review comments if given. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes.
+description: Fix the visual diffs (and any non-visual checks) that have been reviewed and rejected on a Meticulous test run, following their review comments if given. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes.
 user-invocable: true
 ---
 
@@ -20,9 +20,23 @@ meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeRevie
 get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
 ```
 
+Without arguments the CLI resolves the run from your local git HEAD; to name it explicitly, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (the latest run for that PR's head commit; MCP takes `prNumber` in place of `testRunId` too).
+
 **Important — these `--only*` flags are additive (OR'd):** passing both `--onlyRejected` and `--onlyWithComments` returns every diff that's rejected, has an open comment, or both — not just the intersection — since a comment on a diff that wasn't formally rejected may still contain an instruction worth acting on. `--includeAllDiffs` is implied, so this spans the full run rather than just the selected subset; `--includeReviews` adds `decision`/`openComments` columns so you can tell which case each row is.
 
 **Not every commented row is a fix target.** The `meticulous-review` skill's `ignore-diff` posts a note saying the diff is unrelated to the change, and `approve-diff` may post one explaining an approval — neither comment is a fix instruction. When reading Step 1's rows, skip diffs whose only open comments are those; leave those threads alone.
+
+**Rejected checks (only if the run has any).** A run can also carry non-visual checks, such as `accessibility` or `network-requests`. List them with `meticulous agent test-run-check --availableIds` (MCP: `get_test_run_check_available_ids`). If that is refused because the project isn't set up for checks, or lists nothing, there are none: skip the rest of this paragraph. Otherwise read each check's recorded reasons:
+
+```bash
+# CLI (--prNumber=<n> can stand in for --testRunId)
+meticulous agent check-comments --testRunId=<id> --checkId=<checkId> [--checkType=custom]
+
+# MCP
+get_check_comments(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom")
+```
+
+A check whose open comment starts `Verdict: reject` was rejected by an agent, and the rest of the comment says why: that check is a fix target, and the reason is your instruction. Comments starting `Verdict: approve` or `Verdict: ignore` are not. A person's rejection records no reason here, so if the user tells you a check was rejected, treat it as a fix target too and work from its report. For each fix-target check, fetch its report with `meticulous agent test-run-check --checkId=<checkId> [--checkType=custom]` (MCP: `get_test_run_check`) to see the findings themselves.
 
 ## Step 2 -- Read the review comments for diffs that have any
 
@@ -81,6 +95,8 @@ Use `reply-to-diff-comment` when the diff already has a comment thread — pass 
 
 Either way, move on to the next fix-target diff; report it at the end (see the final report below).
 
+Fix-target checks from Step 1 are fixed the same way, working from the rejection reason and the report's findings. They have no comment thread to reply on: check reasons aren't shown to people in the Meticulous app. So record what you did for each check, fixed or not and why, in the final report and the PR comment (Step 6) instead.
+
 ## Step 5 -- Commit, push, and let CI confirm
 
 1. Commit the fixes. Note in the commit message that this addressed Meticulous review feedback, specific enough that `git log` alone tells the story later:
@@ -108,12 +124,14 @@ Either way, move on to the next fix-target diff; report it at the end (see the f
 
 If a diff you believed you fixed is still showing up (decisions/comments carry forward from the compared run), your fix didn't address the root cause; go back to Step 3/4 for that one, then repeat this step.
 
+Check reviews don't carry forward: the new run's checks start undecided. To confirm a check fix, fetch that check's report on the new run (`meticulous agent test-run-check --checkId=<checkId> [--checkType=custom]`) and make sure the finding you fixed is gone.
+
 ## Step 6 -- Final report
 
-Summarize the outcome, covering **every fix-target** diff from Step 1 (omit the ignore-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
+Summarize the outcome, covering **every fix-target** diff and check from Step 1 (omit the ignore-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
 
-1. **Fixed**: which diffs were resolved, what the underlying code change was, and which comment(s) it addressed, if any.
-2. **Not fixed** (if any): which diffs couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. Note that you left this explanation as a reply/comment on the diff (Step 4) — don't just leave it in the report where only this conversation sees it. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.
+1. **Fixed**: which diffs and checks were resolved, what the underlying code change was, and which comment(s) or rejection reason it addressed, if any.
+2. **Not fixed** (if any): which diffs or checks couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. For a diff, note that you left this explanation as a reply/comment on it (Step 4) — don't just leave it in the report where only this conversation sees it. For a check, the report and PR comment are the only record a person sees. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.
 
 Post this report as a comment on the PR itself, in addition to delivering it here (e.g. `gh pr comment <number> --body "..."` for GitHub, `glab mr note <id> --message "..."` for GitLab, or a `POST /2.0/repositories/{workspace}/{repo_slug}/pullrequests/{id}/comments` call with body `{"content": {"raw": "..."}}` for Bitbucket).
 
