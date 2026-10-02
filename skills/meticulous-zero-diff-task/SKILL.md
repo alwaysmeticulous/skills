@@ -102,7 +102,7 @@ get_test_run_for_commit(commitSha="<sha>")
 get_test_run_diffs(testRunId="<id>")
 ```
 
-Instead of resolving from HEAD you can also name the run with `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` — the last picks the latest run for the PR's head commit (on MCP, `get_test_run_diffs(prNumber=<n>)` directly).
+Instead of resolving from HEAD you can also name the run with `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (on MCP, `get_test_run_diffs(prNumber=<n>)` directly).
 
 If CI hasn't triggered the run yet, wait and retry rather than re-triggering it yourself — the PR's run should come from the same CI pipeline a human reviewer will see. If the PR run shows different diffs than your local iteration did, treat that as a new signal: go back to Step 4 using the PR's `testRunId`.
 

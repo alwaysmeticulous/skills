@@ -31,7 +31,7 @@ get_test_run_for_commit(commitSha="<sha>")
 get_test_run_diffs(testRunId="<id>")
 ```
 
-Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, priority-ordered subset of real visual differences; work through them top to bottom. To target a run explicitly instead of resolving from HEAD, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (the latest run for that PR's head commit — no local checkout needed; on MCP, `get_test_run_diffs(prNumber=<n>)` skips the `get_test_run_for_commit` step). The CLI blocks until the run finishes by default (pass `--dontWaitForTestRunToComplete` to instead report an in-progress run and exit immediately); MCP never blocks, so keep polling until `status` is `complete`/`failed`.
+Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, priority-ordered subset of real visual differences; work through them top to bottom. To target a run explicitly instead of resolving from HEAD, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (on MCP, `get_test_run_diffs(prNumber=<n>)` skips the `get_test_run_for_commit` step). The CLI blocks until the run finishes by default (pass `--dontWaitForTestRunToComplete` to instead report an in-progress run and exit immediately); MCP never blocks, so keep polling until `status` is `complete`/`failed`.
 
 Every returned row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
 

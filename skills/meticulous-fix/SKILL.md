@@ -20,7 +20,7 @@ meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeRevie
 get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
 ```
 
-Without arguments the CLI resolves the run from your local git HEAD; to name it explicitly, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (the latest run for that PR's head commit; MCP takes `prNumber` in place of `testRunId` too).
+Without arguments the CLI resolves the run from your local git HEAD; to name it explicitly, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (MCP takes `prNumber` in place of `testRunId` too).
 
 **Important — these `--only*` flags are additive (OR'd):** passing both `--onlyRejected` and `--onlyWithComments` returns every diff that's rejected, has an open comment, or both — not just the intersection — since a comment on a diff that wasn't formally rejected may still contain an instruction worth acting on. `--includeAllDiffs` is implied, so this spans the full run rather than just the selected subset; `--includeReviews` adds `decision`/`openComments` columns so you can tell which case each row is.
 
