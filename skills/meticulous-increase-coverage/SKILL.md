@@ -52,7 +52,7 @@ You are looking for two different things, and it helps to keep them apart:
 - **`.meticulousignore` candidates**: files that are _uniformly_ at 0% across a whole directory, which suggests they never execute in a browser at all.
 - **Coverage targets**: files a real user flow could reach but that no recorded session happens to reach.
 
-Each has its own queries, all built on `--orderBy`. It ranks every file in the run on the server, 0% files included (no `--includeAllFiles` needed), and breaks ties by path. `--globFilter` scopes a query to a directory and can be repeated.
+Each has its own queries, all built on `--orderBy`. It ranks every file in the run that has executable lines on the server, 0% files included (types-only files are left out) (no `--includeAllFiles` needed), and breaks ties by path. `--globFilter` scopes a query to a directory and can be repeated.
 
 ### Ignore candidates
 
