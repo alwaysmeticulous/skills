@@ -1,0 +1,23 @@
+---
+description: This repo is public — never reference private Meticulous repos, PRs or internals
+alwaysApply: true
+---
+
+# No references to private repos
+
+This repo (`alwaysmeticulous/skills`) is **public**. The repos it's developed alongside — most notably `alwaysmeticulous/meticulous` — are **private**. Never reference them in anything that ends up in this repo or on its GitHub pages:
+
+- skill files, the README and other docs
+- commit messages
+- PR titles and descriptions, PR/review comments and replies
+
+That rules out:
+
+- private repo names, or phrases like "the meticulous repo" / "the main repo"
+- links or `owner/repo#123` references to private PRs, issues or commits
+- internal file paths, package names, services or tooling (e.g. `public_packages/…`, `webapp-backend`)
+- internal processes, such as syncing these skills into another repo via `skills-lock.json`
+
+Describe changes in terms of what's publicly visible instead: the published CLI (`@alwaysmeticulous/cli`) and its commands and flags, the Meticulous MCP server and its tools, the web app, and the public docs. For example, write "the CLI now supports `--prNumber`", not "documents `--prNumber` (alwaysmeticulous/meticulous#14667)"; and "not in a released CLI yet", not "from PRs still open in the main repo".
+
+References to this repo's own PRs and issues are fine.

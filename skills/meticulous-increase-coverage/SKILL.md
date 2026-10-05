@@ -301,7 +301,7 @@ The second deliverable. Branch, commit the `.meticulousignore` change, and open 
 
 Confirm before you commit: every path you are about to ignore stayed at 0% in the union (Step 8's check). A path your own new sessions just covered obviously doesn't belong in the ignore list, and that check catches it.
 
-A common structure is "ignore everything, then un-ignore what does run in the browser" — the pattern Meticulous's own monorepo uses:
+A common structure, especially in monorepos, is "ignore everything, then un-ignore what does run in the browser":
 
 ```
 # Ignore everything except packages that are executed in the
