@@ -9,5 +9,8 @@
   "homepage": "https://github.com/alwaysmeticulous/skills",
   "repository": "https://github.com/alwaysmeticulous/skills",
   "license": "ISC",
-  "keywords": ["meticulous", "visual-regression", "testing", "skills", "mcp"]
+  "keywords": ["meticulous", "visual-regression", "testing", "skills", "mcp"],
+  "icon": "./assets/logo.png",
+  "documentationUrl": "https://app.meticulous.ai/docs/agents/setup",
+  "privacyPolicyUrl": "https://www.meticulous.ai/privacy-policy"
 }
