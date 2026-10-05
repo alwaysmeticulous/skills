@@ -167,6 +167,14 @@ The skills themselves are also under active development. How to update them depe
 
   Tell the user the update only takes effect after they restart Claude Code (they can also do this from the `/plugin` menu themselves). One exception: if `claude plugin list` reports the plugin's scope as `managed`, it's pinned by their organization's managed settings — don't try to update it, just mention it to the user.
 
+- **Installed as the Codex plugin** — `codex plugin list` lists `meticulous@meticulous`. `npx skills` won't touch these either; refresh the marketplace, which also reinstalls the plugin if it changed:
+
+  ```bash
+  codex plugin marketplace upgrade meticulous
+  ```
+
+  The update takes effect in the next Codex session.
+
 - **Installed from the Cursor plugin marketplace** — there's no command to run; recommend the user update it from Cursor's **Customize → Plugins**.
 
 If the applicable command isn't whitelisted, recommend the user run it themselves. Either way — whether it ran, or the user declined — proceed with the calling skill.

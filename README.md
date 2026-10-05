@@ -34,6 +34,19 @@ Then type `/mcp` and choose **Authenticate** for the Meticulous MCP server (logi
 
 Like the CLI, the plugin honours `METICULOUS_API_URL` (without a trailing slash): when it is set in the environment Claude Code starts in, the MCP server is reached at `$METICULOUS_API_URL/mcp` instead of `https://app.meticulous.ai/api/mcp`.
 
+### Codex plugin
+
+This repository is also packaged as a [Codex plugin](https://developers.openai.com/codex/plugins), which installs all the skills below and automatically connects the hosted [Meticulous MCP server](https://app.meticulous.ai/api/mcp). To install, run:
+
+```bash
+codex plugin marketplace add alwaysmeticulous/skills
+codex plugin add meticulous@meticulous
+```
+
+Then run `codex mcp login meticulous` to authenticate the MCP server (login happens in your browser). To pick up later changes, run `codex plugin marketplace upgrade meticulous`.
+
+Unlike the Claude Code plugin, the Codex plugin always connects to `https://app.meticulous.ai/api/mcp`: Codex doesn't expand environment variables in plugin MCP URLs, so `METICULOUS_API_URL` isn't honoured here.
+
 ### Cursor Marketplace
 
 This repository is also packaged as a [Cursor plugin](https://cursor.com/docs/plugins). Once listed in the Cursor Marketplace, Cursor users can install Meticulous skills from **Customize → Plugins** (or search the marketplace) without using `npx skills`. The `npx skills` flow above remains the recommended path when you need the same skills across multiple agents.
