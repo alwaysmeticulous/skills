@@ -2,13 +2,13 @@
   "name": "meticulous",
   "owner": {
     "name": "Meticulous",
-    "url": "https://github.com/alwaysmeticulous/skills"
+    "email": "support@meticulous.ai"
   },
   "plugins": [
     {
       "name": "meticulous",
       "source": "./",
-      "description": "Skills for the Meticulous UI testing platform"
+      "description": "Agent skills for Meticulous visual regression testing — review test runs, investigate replays, debug diffs."
     }
   ]
 }
