@@ -55,6 +55,9 @@ The commands that read a test run (`test-run-for-commit`, `test-run-diffs`, `tes
 | `trigger-test-run`               | Trigger a run against a deployment                                          | `trigger_test_run` (returns immediately — does not wait for completion)                                                          |
 | `complete-base-run`              | Replay the sessions a base run has not run yet                              | `complete_base_run` (returns once scheduled — does not wait for completion)                                                      |
 | `promote-sessions`               | Add sessions a pinned-session run replayed to the selected set              | `promote_sessions`                                                                                                               |
+| `swarm-runs`                     | Latest Agent swarm runs for a commit, PR or test run                        | `get_agent_swarm_runs`                                                                                                           |
+| `swarm-run`                      | An Agent swarm run's status, counts, takeaways and cases                    | `get_agent_swarm_run` (does not wait — the CLI's `--wait` polls)                                                                 |
+| `swarm-case`                     | One Agent swarm case: steps, comparisons, failure check and fix prompt      | `get_agent_swarm_case`                                                                                                           |
 | `submit-feedback`                | Submit free-form feedback about Meticulous                                  | `submit_feedback`                                                                                                                |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
@@ -458,6 +461,39 @@ get_test_runs()
 | `--includeDurationSeconds`          | boolean | `false`         | Add the seconds the run spent running (not with `--baseTestRuns`)                                    |
 | `--limit`                           | number  | `100`           | 1–1000, or 1–100 with `--includeBaseTestRunId` / `--includeDiffCount`                                |
 | `--offset`                          | number  | `0`             | —                                                                                                    |
+
+---
+
+## agent swarm-runs / swarm-run / swarm-case
+
+```bash
+# CLI
+meticulous agent swarm-runs [--commitSha=<sha> | --prNumber=<n> | --testRunId=<id>] [--project=<project>]
+meticulous agent swarm-run [--agenticRunId=<id> | --commitSha=<sha> | --prNumber=<n> | --testRunId=<id>] [--outcomes fail blocked] [--wait]
+meticulous agent swarm-case --agenticRunId=<id> --caseIndex=<n> [--fixPrompt]
+
+# MCP
+get_agent_swarm_runs(commitSha="<sha>")
+get_agent_swarm_run(prNumber=<n>, outcomes=["fail", "blocked"])
+get_agent_swarm_case(agenticRunId="<id>", caseIndex=<n>)
+```
+
+**Purpose:** Read [Agent swarm](https://app.meticulous.ai/docs/agents/agent-swarm) results. `swarm-runs` finds the latest execution run (the one with case results) and plan-only run for a target; with `--prNumber` it also lists the PR's recent execution runs. `swarm-run` shows one run — by `--agenticRunId`, or the target's latest execution run — with its `phase` (`pending`, `running`, `succeeded`, `unsuccessful`), case `counts`, `takeaways`, `notTestable`, and a summary of each case. `swarm-case` shows one case in full: steps, mock-data provenance, base-vs-head `comparisons`, recorded `sessionIds`, the failure checker's `check`, and a ready-made `fixPrompt` for an upheld failure. With no target, the CLI uses the current git HEAD.
+
+A case's `status` is `pass`, `fail`, `blocked`, `skipped`, or (while the run is in progress) `not-started`/`running`. A `fail` has already been upheld by the failure checker; `blockedBy` says whether the `application` (a likely bug) or the `environment` (e.g. a backend outage) stopped a blocked case. While a run is in progress, cases come from its live progress (`resultSource: "progress"`) and carry less detail.
+
+The failure check quotes source code, so `check` and `fixPrompt` are returned only when the caller may read the project's code; otherwise they are `null` and `checkWithheld` (or `resultWithheld` for older runs) is `"source_code_access"`. Verify a fix prompt's cited code against your branch before applying its suggested fix.
+
+| Option           | Type     | Default          | Description                                                                      |
+| ---------------- | -------- | ---------------- | -------------------------------------------------------------------------------- |
+| `--commitSha`    | string   | current git HEAD | Commit to look up runs for                                                       |
+| `--prNumber`     | number   | —                | Pull/merge request to look up runs for, across all of its commits                |
+| `--testRunId`    | string   | —                | Test run whose commit to look up runs for                                        |
+| `--agenticRunId` | string   | —                | `swarm-run`/`swarm-case`: the run to show                                        |
+| `--outcomes`     | string[] | all              | `swarm-run`: only list cases with these statuses (counts still cover every case) |
+| `--wait`         | boolean  | `false`          | `swarm-run`: poll until the run finishes. MCP never waits — call again to poll   |
+| `--caseIndex`    | number   | —                | `swarm-case`: the case, from `swarm-run` (required)                              |
+| `--fixPrompt`    | boolean  | `false`          | `swarm-case`: print only the fix prompt                                          |
 
 ---
 
