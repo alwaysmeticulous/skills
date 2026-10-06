@@ -11,6 +11,8 @@
   "repository": "https://github.com/alwaysmeticulous/skills",
   "license": "ISC",
   "keywords": ["meticulous", "visual-regression", "testing", "skills"],
+  "category": "developer-tools",
+  "tags": ["visual-regression", "testing", "frontend"],
   "logo": "assets/logo.png",
   "skills": "./skills/"
 }
