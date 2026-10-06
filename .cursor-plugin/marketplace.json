@@ -8,7 +8,9 @@
     {
       "name": "meticulous",
       "source": "./",
-      "description": "Skills for the Meticulous UI testing platform"
+      "description": "Agent skills for Meticulous visual regression testing — review test runs, investigate replays, debug diffs.",
+      "category": "Developer Tools",
+      "tags": ["visual-regression", "testing", "frontend"]
     }
   ]
 }
