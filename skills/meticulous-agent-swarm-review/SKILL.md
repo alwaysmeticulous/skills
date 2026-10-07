@@ -38,6 +38,7 @@ get_agent_swarm_case(agenticRunId="<id>", caseIndex=<n>)
 - **`blocked` with `blockedBy: "application"`** means the app stopped the flow, e.g. a crash or a missing control. Treat it like a failure.
 - **`blocked` with `blockedBy: "environment"`** means the test setup stopped it, e.g. a backend outage or failed login. Report it; don't change the code for it.
 - Use `steps` (with `outcome` and `reason`) to see where the flow broke. `comparisons` say whether the base commit behaved the same way. A case where base and head both fail is probably not caused by this pull request.
+- If `check.linkedToChange` is `"no"`, the failure is real but the checker found that this pull request didn't cause it (see `linkedToChangeRationale`). Confirm that before changing the pull request's code. `runEvidence` lists backend requests that failed, hung or were very slow during the run; a failure that depends on them may be environmental.
 - If `checkWithheld` is `"source_code_access"`, the caller can't read the project's code, so there is no check or fix prompt. Diagnose from the steps and your local checkout instead.
 
 ## Step 3 -- Fix and re-run
