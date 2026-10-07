@@ -116,7 +116,7 @@ Before ignoring, check that the change cannot reach the affected area (nothing i
 
 When unsure, leave the diff undecided and explain with `create-diff-comment`.
 
-**Report likely engine bugs.** Add `--reportFlake` when ignoring a diff where the replay was nondeterministic although Meticulous should have made it deterministic — rendering, animations, timers, dates, randomness, network ordering, or a replay that took a different path. Meticulous then investigates it as a likely replay-engine bug. Leave it off for a genuine difference in what the app served (a server-rendered timestamp, a build version, third-party content): the app's owner fixes those, e.g. by hiding the element with the `meticulous-ignore` class.
+**Report likely engine bugs.** Add `--reportFlake` when ignoring a diff where the replay was nondeterministic although Meticulous should have made it deterministic — rendering, animations, timers, dates, randomness, network ordering, or a replay that took a different path. Meticulous then investigates it as a likely replay-engine bug. Report each flake once per run, not on every diff it shows up in: when one cause produces the same flake across many diffs (e.g. a clock or an animation that differs on every screen), ignore each of those diffs but add `--reportFlake` to only one of them. Leave it off for a genuine difference in what the app served (a server-rendered timestamp, a build version, third-party content): the app's owner fixes those, e.g. by hiding the element with the `meticulous-ignore` class.
 
 **This skill reviews and flags — it does not fix.** Hand a rejected diff off to the `meticulous-fix` skill (or the person/skill implementing the change) — don't attempt code changes here.
 
