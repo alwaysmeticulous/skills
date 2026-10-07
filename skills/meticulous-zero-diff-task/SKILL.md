@@ -126,7 +126,7 @@ meticulous agent ignore-diff --replayDiffId=<id> --screenshotName=<name> --reaso
 ignore_diff(replayDiffId="<id>", screenshotName="<name>", reason="<why it's unrelated>", x=<0..1>, y=<0..1>, reportFlake=<true|false>)
 ```
 
-Add `--reportFlake` when the replay itself was nondeterministic where Meticulous should have made it deterministic (see "Report likely engine bugs" in the `meticulous-review` skill's Step 5), so Meticulous investigates it as a likely replay-engine bug.
+Add `--reportFlake` when the replay itself was nondeterministic where Meticulous should have made it deterministic (see "Report likely engine bugs" in the `meticulous-review` skill's Step 5), so Meticulous investigates it as a likely replay-engine bug. Report each flake once per run: if the same flake shows up across many diffs, add it to only one of them.
 
 A comment decides nothing — the diff stays `unreviewed` and the check stays pending — but your reasoning is on record for the human reviewing the PR.
 
