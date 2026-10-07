@@ -87,7 +87,7 @@ Once the run is clean (or every remaining diff is accounted for), commit any out
 **Author credit:** end the commit message with a co-author trailer for Meticulous, since Meticulous drove the implementation loop, not just a final check:
 
 ```
-Upgrade date-fns to v4
+<summary of the change>
 
 Co-authored-by: Meticulous <87660985+alwaysmeticulous[bot]@users.noreply.github.com>
 ```
