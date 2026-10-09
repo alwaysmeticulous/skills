@@ -1,6 +1,6 @@
 ---
 name: meticulous-review
-description: Analyze a completed Meticulous test run — compare the diffs (and any failing non-visual checks) against the PR description to see what's expected, then focus on finding and flagging potential regressions. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID, commit SHA or PR number. Use when asked to review Meticulous test results, when babysitting a pull/merge request's Meticulous Tests CI check, or right after implementing a frontend change yourself.
+description: Analyze a completed Meticulous test run — compare the diffs (and any failing non-visual checks and Agent swarm cases) against the PR description to see what's expected, then focus on finding and flagging potential regressions. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID, commit SHA or PR number. Use when asked to review Meticulous test results, when babysitting a pull/merge request's Meticulous Tests CI check, or right after implementing a frontend change yourself.
 user-invocable: true
 ---
 
@@ -206,17 +206,59 @@ This works like Step 6, with these differences:
 - **`approve-check` and `ignore-check` need Enable approve/ignore check actions**, a separate project setting from the diff one. Without it both are refused: unlike `ignore-diff`, there is no comment-only fallback. Over MCP they're only offered when it's on. If they're refused, leave the check undecided and name it in your final report as needing a human decision. `reject-check` always works.
 - There's no neutral comment for a check. When unsure, leave it undecided and explain why in your final report.
 
-## Step 8 -- Final report
+## Step 8 -- Review Agent swarm results (only if the run has any)
 
-Cover **all significant visual changes**, plus any failing checks from Step 7.
+[Agent swarm](https://app.meticulous.ai/docs/agents/agent-swarm) is Meticulous's hosted agent that explores a pull request's build in a browser and reports test cases, each `pass`, `fail`, `blocked` or `skipped`. Most projects don't run it, so first look for a run on the same commit, listing only the cases that need attention:
+
+```bash
+# CLI (same run selector as Step 1; waits up to 10 minutes for a run still in progress)
+meticulous agent agent-swarm-run --status=fail,blocked
+
+# MCP
+get_agent_swarm_run(commitSha="<sha>", status="fail,blocked")
+```
+
+If it reports no Agent swarm run for the commit, or only a plan-only one, there's nothing to review: skip to Step 9. Over MCP, a run still in progress returns `{ status: 'processing', message }`: poll every 10s, for at most 10 minutes. If it still hasn't finished by then (with the CLI, if the 10 minutes run out), don't wait any longer: say in your final report that it was still running.
+
+Before looking at cases, check the run itself:
+
+- **`status` is `failed`, `timedOut` or `cancelled`**: the run didn't complete. Report its `errorMessage` instead of triaging cases.
+- **`notTestable` is set**: the agent decided the change can't be tested in a browser. Report its reason; there are no cases.
+- **`resultWithheld` is `"source_code_access"`**: you may not read this run's result. Say so in your final report.
+- **`supersededBySwarmRunId` is set**: a newer run covers this pull request. Review that one instead (`--swarmRunId=<id>`).
+
+Unlike diffs and checks, Agent swarm cases take no approve, reject or ignore decision: a `fail` has already been upheld by an independent failure checker. Your job is to work out which failures this PR caused, and report them. Start with each case's `takeaway`, the run's own headline findings, then fetch each listed case in full, naming the run by the `swarmRunId` printed above:
+
+```bash
+# CLI
+meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
+
+# MCP
+get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
+```
+
+Classify each case, against Step 0's expectations as for diffs:
+
+- **`fail`**: a **potential regression** unless the case shows otherwise. `steps` (each with an `outcome`, and a `reason` for a failed one) show where the flow broke, `check` has the checker's `rootCause`, `fix` and `howToVerify`, and base-vs-head `comparisons` judge each compared screenshot a `regression` or an `intended-change`. When `check.linkedToChange` is `"no"`, the checker found the failure real but not caused by this PR, e.g. a pre-existing bug (see its `linkedToChangeRationale`): confirm that against the PR's diff, then report it as **pre-existing**. **Expected** applies only when the failure is the very behavior change the PR intends, e.g. the case tested the old behavior the PR removes.
+- **`blocked` with `blockedBy: "application"`**: the app stopped the flow, e.g. a crash or a missing control. Treat it like a `fail`.
+- **`blocked` with `blockedBy: "environment"`**: the test setup stopped it, e.g. a backend outage or failed login. Not a finding against the PR; report it so the user can fix the environment.
+
+A failure may also be environmental when it depends on the backend requests that failed, hung or were very slow during the run, which `runEvidence` lists. A case with `usedSyntheticMockData` ran on generated mock data: for a `fail`, `mockDataProvenance.strictRecheck.reproduced` says whether it also reproduced on recorded data. If `checkWithheld` is `"source_code_access"`, there is no `check` or `fixPrompt`: classify from the steps and your local checkout instead.
+
+**This skill reviews — it does not fix.** Hand potential regressions to the `meticulous-fix` skill (or the person/skill implementing the change), which also uses the case's ready-made `fixPrompt`.
+
+## Step 9 -- Final report
+
+Cover **all significant visual changes**, plus any failing checks from Step 7 and Agent swarm cases from Step 8.
 
 1. **Expected changes** — brief, a line or two each: what changed, which Step 0 expectation it matches, and whether you approved it.
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you approved, rejected or ignored it (or left it undecided), and your reason in full, since the app doesn't show it.
+4. **Agent swarm** (if the run has any) — link the run (`run.url`, when given). For each failed or application-blocked case, its `caseIndex` and title, what went wrong, and your classification (potential regression, pre-existing, or expected) with the evidence for it. Then, briefly, any environment-blocked cases, or why the run didn't complete or wasn't testable.
 
-The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
+The PR is only good when every diff and failing check has been matched or flagged, and no Agent swarm case is a potential regression. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
 
-## Step 9 -- Report feedback to Meticulous
+## Step 10 -- Report feedback to Meticulous
 
 **Always do this as the last step — it's part of the review itself, not something the user has to ask for.** Submit one brief note: did Meticulous catch a real problem, was anything confusing, what would have made the review easier. Positive feedback counts too — this isn't just for reporting friction.
 
