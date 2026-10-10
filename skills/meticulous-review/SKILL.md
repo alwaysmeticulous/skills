@@ -1,6 +1,6 @@
 ---
 name: meticulous-review
-description: Analyze a completed Meticulous test run — compare the diffs (and any failing non-visual checks) against the PR description to see what's expected, then focus on finding and flagging potential regressions. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID, commit SHA or PR number. Use when asked to review Meticulous test results, when babysitting a pull/merge request's Meticulous Tests CI check, or right after implementing a frontend change yourself.
+description: Analyze a completed Meticulous test run — compare the diffs (and any failing non-visual checks) against the PR description to see what's expected, then focus on finding and flagging potential regressions, and summarize any Agent swarm results. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID, commit SHA or PR number. Use when asked to review Meticulous test results, when babysitting a pull/merge request's Meticulous Tests CI check, or right after implementing a frontend change yourself.
 user-invocable: true
 ---
 
@@ -206,17 +206,44 @@ This works like Step 6, with these differences:
 - **`approve-check` and `ignore-check` need Enable approve/ignore check actions**, a separate project setting from the diff one. Without it both are refused: unlike `ignore-diff`, there is no comment-only fallback. Over MCP they're only offered when it's on. If they're refused, leave the check undecided and name it in your final report as needing a human decision. `reject-check` always works.
 - There's no neutral comment for a check. When unsure, leave it undecided and explain why in your final report.
 
-## Step 8 -- Final report
+## Step 8 -- Summarize Agent swarm results (only if the commit has any)
 
-Cover **all significant visual changes**, plus any failing checks from Step 7.
+Some projects also run Agent swarm, Meticulous's hosted agent that tests a pull request's build in a browser and reports a handful of test cases, each `pass`, `fail`, `blocked` or `skipped`. There's nothing to approve, reject or ignore: its results are informational, except for cases with a fix prompt. Look for a run on the same commit:
+
+```bash
+# CLI (same run selector as Step 1; waits up to 10 minutes for a run still in progress)
+meticulous agent agent-swarm-run
+
+# MCP (a run still in progress returns { status: 'processing' }: poll every 10s, for at most 10 minutes)
+get_agent_swarm_run(commitSha="<sha>")
+```
+
+If it reports no Agent swarm run for the commit, or only a plan-only one, skip to Step 9. If the run is still in progress after 10 minutes, didn't complete (its `errorMessage` says why), or was found not testable (`notTestable`), just note that for the final report.
+
+Otherwise read through all of its cases (`title`, `status`, `outcomeSummary`), to get an idea of what was tested and what wasn't. The cases that matter are the ones with a **fix prompt**: a failure upheld by an independent checker, with a ready-made prompt for fixing it. Only a `fail` case can have one, so fetch each of those and check whether its output has a `fixPrompt`:
+
+```bash
+# CLI
+meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
+
+# MCP
+get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
+```
+
+Whether a case has one matters more than what it says: report it, and leave fixing it to the `meticulous-fix` skill (or the person/skill implementing the change).
+
+## Step 9 -- Final report
+
+Cover **all significant visual changes**, plus any failing checks from Step 7 and an Agent swarm summary from Step 8.
 
 1. **Expected changes** — brief, a line or two each: what changed, which Step 0 expectation it matches, and whether you approved it.
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you approved, rejected or ignored it (or left it undecided), and your reason in full, since the app doesn't show it.
+4. **Agent swarm** (if the commit has a run) — a line or two, linked to `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`: the outcomes (e.g. "4 cases: 3 passed, 1 blocked") and roughly what they covered, or why the run didn't complete or wasn't testable. Name each failed case and its `outcomeSummary`, and point out the ones with a fix prompt, which the `meticulous-fix` skill can work from.
 
 The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
 
-## Step 9 -- Report feedback to Meticulous
+## Step 10 -- Report feedback to Meticulous
 
 **Always do this as the last step — it's part of the review itself, not something the user has to ask for.** Submit one brief note: did Meticulous catch a real problem, was anything confusing, what would have made the review easier. Positive feedback counts too — this isn't just for reporting friction.
 
