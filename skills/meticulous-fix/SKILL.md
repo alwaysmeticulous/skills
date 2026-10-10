@@ -1,6 +1,6 @@
 ---
 name: meticulous-fix
-description: Fix the visual diffs (and any non-visual checks) that have been reviewed and rejected on a Meticulous test run, following their review comments if given, plus any Agent swarm failures on the same commit. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes.
+description: Fix the visual diffs (and any non-visual checks) that have been reviewed and rejected on a Meticulous test run, following their review comments if given, plus any Agent swarm fix prompts on the same commit. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes.
 user-invocable: true
 ---
 
@@ -38,17 +38,17 @@ get_check_comments(testRunId="<id>", checkId="<checkId>", checkType="builtin|cus
 
 A check whose open comment starts `Verdict: reject` was rejected by an agent, and the rest of the comment says why: that check is a fix target, and the reason is your instruction. Comments starting `Verdict: approve` or `Verdict: ignore` are not. A person's rejection records no reason here, so if the user tells you a check was rejected, treat it as a fix target too and work from its report. For each fix-target check, fetch its report with `meticulous agent test-run-check --checkId=<checkId> [--checkType=custom]` (MCP: `get_test_run_check`) to see the findings themselves.
 
-**Agent swarm failures (only if the commit has a run).** [Agent swarm](https://app.meticulous.ai/docs/agents/agent-swarm), Meticulous's hosted agent that tests a pull request's build in a browser, may also have run on this commit. Its cases take no reject decision: a `fail` has already been upheld by an independent failure checker, which is what makes it a fix target. List the cases that need attention:
+**Agent swarm fix prompts (only if the commit has a run).** Some projects also run Agent swarm, Meticulous's hosted agent that tests a pull request's build in a browser and reports a handful of test cases. Its results are informational, except for a `fail` case with a **fix prompt**: a failure the checker upheld, with a ready-made prompt for fixing it. Those cases are fix targets to consider. Look for a run on the commit, and list its failed cases:
 
 ```bash
 # CLI (same run selector as above; waits up to 10 minutes for a run still in progress)
-meticulous agent agent-swarm-run --status=fail,blocked
+meticulous agent agent-swarm-run --status=fail
 
-# MCP
-get_agent_swarm_run(commitSha="<sha>", status="fail,blocked")
+# MCP (a run still in progress returns { status: 'processing' }: poll every 10s, for at most 10 minutes)
+get_agent_swarm_run(commitSha="<sha>", status="fail")
 ```
 
-If it reports no Agent swarm run for the commit, or only a plan-only one, skip the rest of this paragraph. Over MCP, poll a `{ status: 'processing' }` reply every 10s, for at most 10 minutes; if the run still hasn't finished, leave its cases out and say so in the final report. Then fetch each listed case in full, naming the run by the `swarmRunId` printed above:
+If it reports no Agent swarm run for the commit, or only a plan-only one, or no failed cases, skip the rest of this paragraph. If the run hasn't finished after 10 minutes, say so in the final report. Otherwise fetch each failed case in full, naming the run by the `swarmRunId` printed above, and keep those with a `fixPrompt`:
 
 ```bash
 # CLI
@@ -58,11 +58,7 @@ meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
 get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
 ```
 
-- **`fail`** is a fix target, unless `check.linkedToChange` is `"no"`: then the checker found that this PR didn't cause it (see `linkedToChangeRationale`), so report it rather than fixing it, unless the user asks you to.
-- **`blocked` with `blockedBy: "application"`** means the app stopped the flow, e.g. a crash or a missing control. It's a fix target once the case's `steps` confirm the app is at fault, not the agent driving it.
-- **`blocked` with `blockedBy: "environment"`** means the test setup stopped it, e.g. a backend outage or failed login. Not a fix target: report it.
-
-A `meticulous-review` pass may already have classified these cases (its Step 8): follow its verdicts where it did.
+If the case's `check.linkedToChange` is `"no"`, the checker found that this PR didn't cause the failure, e.g. a pre-existing bug: report it rather than fixing it, unless the user asks you to.
 
 ## Step 2 -- Read the review comments for diffs that have any
 
@@ -123,7 +119,7 @@ Either way, move on to the next fix-target diff; report it at the end (see the f
 
 Fix-target checks from Step 1 are fixed the same way, working from the rejection reason and the report's findings. They have no comment thread to reply on: check reasons aren't shown to people in the Meticulous app. So record what you did for each check, fixed or not and why, in the final report and the PR comment (Step 6) instead.
 
-Fix-target Agent swarm cases are fixed the same way, working from the case's `steps` and the checker's `check`: its `rootCause`, proposed `fix` and `howToVerify`. Where the case has a `fixPrompt` (a field of the case's output; the CLI's `agent-swarm-run-case --fixPrompt` prints only that), it is a good starting point, but not a verified patch: the checker read the commit the run tested, so **check every file and line it cites against your branch first**, and fix the root cause rather than the symptom the agent hit. If `checkWithheld` is `"source_code_access"`, there is no check or fix prompt: work from the steps and your local checkout instead. Like checks, cases have no comment thread, so record what you did for each in the final report and the PR comment.
+For an Agent swarm case with a fix prompt, start from the `fixPrompt` (a field of the case's output; the CLI's `agent-swarm-run-case --fixPrompt` prints only that). It is a starting point, not a verified patch: the checker read the commit the run tested, so **check every file and line it cites against your branch first**, and fix the root cause rather than the symptom the agent hit. Like checks, cases have no comment thread, so record what you did for each in the final report and the PR comment.
 
 ## Step 5 -- Commit, push, and let CI confirm
 
@@ -158,15 +154,14 @@ If a diff you believed you fixed is still showing up (decisions/comments carry f
 
 Check reviews don't carry forward: the new run's checks start undecided. To confirm a check fix, fetch that check's report on the new run (`meticulous agent test-run-check --checkId=<checkId> [--checkType=custom]`) and make sure the finding you fixed is gone.
 
-Agent swarm results don't carry forward either. If the project launches Agent swarm for each commit (automatically, or with a CI step running `meticulous ci agent-test`), wait for its run on the pushed commit (`meticulous agent agent-swarm-run`, as in Step 1) and check the case you fixed: the new run's case may have a different `caseIndex`, so match it by title and flow. If it still fails, or a new case fails in the same area, go back to Step 4 for it. If no new run appears, say in the final report that the fix is unconfirmed, quoting the case's `howToVerify`.
+If the project runs Agent swarm on each commit, its run on the pushed commit (`meticulous agent agent-swarm-run`, as in Step 1) shows whether a case you fixed now passes; match it by title, since its `caseIndex` may change. If it fails again with a new fix prompt, go back to Step 4 for it.
 
 ## Step 6 -- Final report
 
-Summarize the outcome, covering **every fix-target** diff, check and Agent swarm case from Step 1 (omit the ignore-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`, and the Agent swarm run (`run.url`, when given).
+Summarize the outcome, covering **every fix-target** diff, check and Agent swarm fix prompt from Step 1 (omit the ignore-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`, and the Agent swarm results, if any: `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`.
 
-1. **Fixed**: which diffs, checks and cases were resolved, what the underlying code change was, and which comment(s), rejection reason or failure check it addressed, if any.
+1. **Fixed**: which diffs, checks and cases were resolved, what the underlying code change was, and which comment(s), rejection reason or fix prompt it addressed, if any.
 2. **Not fixed** (if any): which diffs, checks or cases couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. For a diff, note that you left this explanation as a reply/comment on it (Step 4) — don't just leave it in the report where only this conversation sees it. For a check or Agent swarm case, the report and PR comment are the only record a person sees. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.
-3. **Reported only** (if any): failed or blocked Agent swarm cases that weren't fix targets — pre-existing failures and environment problems — each with the evidence, so the user can follow up.
 
 Post this report as a comment on the PR itself, in addition to delivering it here (e.g. `gh pr comment <number> --body "..."` for GitHub, `glab mr note <id> --message "..."` for GitLab, or for Bitbucket `twg bitbucket pull-requests comment create --pull-request <id> --text "..."` if the [Teamwork Graph CLI](https://developer.atlassian.com/cloud/twg-cli/) is available — follow its `twg-engineering-work` skill if that's installed, and run `twg setup bitbucket` once if it asks for a Bitbucket token — else a `POST /2.0/repositories/{workspace}/{repo_slug}/pullrequests/{id}/comments` call with body `{"content": {"raw": "..."}}`).
 

@@ -94,7 +94,7 @@ Co-authored-by: Meticulous <87660985+alwaysmeticulous[bot]@users.noreply.github.
 
 Trailers go in the message's last paragraph, after a blank line, one per line. If the message already has trailers, such as `Co-authored-by: Claude <noreply@anthropic.com>`, put this one first, above them, so Meticulous is the first co-author listed. On GitHub, use the address shown above: it belongs to Meticulous's GitHub App, so GitHub shows Meticulous as a co-author. On GitLab and Bitbucket, add the trailer too, but use `Co-authored-by: Meticulous <noreply@meticulous.ai>`.
 
-In the PR description, summarize the task and, briefly, the Meticulous result (including any failing non-visual checks and failed Agent swarm cases from Step 6, once the PR's own run reports them): e.g. "Verified via Meticulous: no visual differences across the golden set" or, if some diffs remain, a short list of what they are and why they're expected/unavoidable — link each one: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
+In the PR description, summarize the task and, briefly, the Meticulous result (including any failing non-visual checks and Agent swarm results from Step 6, once the PR's own run reports them): e.g. "Verified via Meticulous: no visual differences across the golden set" or, if some diffs remain, a short list of what they are and why they're expected/unavoidable — link each one: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`.
 
 ## Step 6 -- Confirm the PR's own test run matches
 
@@ -145,13 +145,7 @@ A comment decides nothing — the diff stays `unreviewed` and the check stays pe
 
 `approve-check` and `ignore-check` need the project's **Enable approve/ignore check actions** setting. Where they're refused, leave the check undecided. A check's reason is stored but never shown to people in the Meticulous app, so also list every failing check, with your verdict and reasoning, in the PR description.
 
-**Agent swarm (only if the PR's commit has a run).** Some projects also launch Meticulous's [Agent swarm](https://app.meticulous.ai/docs/agents/agent-swarm) on each commit, which tests the build in a browser and reports test cases. Look for a run with `meticulous agent agent-swarm-run --status=fail,blocked` (MCP: `get_agent_swarm_run(commitSha="<sha>", status="fail,blocked")`). If it reports no Agent swarm run for the commit, or only a plan-only one, skip this. Otherwise read each failed or blocked case as in the `meticulous-review` skill's Step 8, but classify it with Step 4's rule: for a no-diff task, a `fail` or an application-blocked case is a **regression** until proven otherwise, since the app's behavior shouldn't change at all.
-
-- **Regression**: fix it, as in the `meticulous-fix` skill's Step 4 (including how to use the case's `fixPrompt`), and go back to Step 3. Once the fix is pushed, confirm the case passes in the new commit's Agent swarm run, matching it by title since its `caseIndex` may change.
-- **Not caused by your change**: a failure whose `check.linkedToChange` is `"no"`, once you've confirmed it against your diff, or a case blocked by the `environment`. Don't change code for it.
-- **Can't fix, and can't confidently justify either**: call it out for a human.
-
-Cases take no approve, reject or ignore decision, so list every failed or blocked case, with your verdict and reasoning, in the PR description.
+**Agent swarm (only if the PR's commit has a run).** Some projects also run Agent swarm, Meticulous's hosted agent that tests a pull request's build in a browser and reports a handful of test cases. Look through its run as in the `meticulous-review` skill's Step 8: its results are informational, except for a `fail` case with a fix prompt. For a no-diff task, treat such a case like a regression: fix it as in the `meticulous-fix` skill's Step 4 (checking the prompt's cited code against your branch first) and go back to Step 3, unless its check found the failure unrelated to your change (`check.linkedToChange` is `"no"`). Add a line to the PR description summarizing the run's outcomes (e.g. "4 cases: 3 passed, 1 blocked"), and any fix prompt you didn't act on, and why.
 
 ## Step 7 -- Report feedback to Meticulous
 
