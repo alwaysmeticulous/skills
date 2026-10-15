@@ -2,11 +2,13 @@
 
 Commands for downloading Meticulous artifacts to the local `dataDir` (default `~/.meticulous`). All commands are idempotent — if the artifact already exists locally it will not be re-fetched.
 
+**Output:** stdout carries only the path(s) the data was written to — or, with `--json`, an object naming them. Progress logs go to stderr and only appear with `--verbose`.
+
 ## download session
 
 ```bash
 # CLI
-meticulous download session --sessionId=<id> [--format=<format>] [--apiToken=<token>]
+meticulous download session --sessionId=<id> [--format=<format>] [--json] [--apiToken=<token>]
 
 # MCP (returns the same structured data inline instead of writing it to disk)
 get_session_data(sessionId="<id>")
@@ -23,12 +25,12 @@ get_session_data(sessionId="<id>")
 | `--outputDir` | string                 | `.meticulous/sessions` | Output directory for multi-file format                                                           |
 | `--apiToken`  | string                 | —                      | Meticulous API token; otherwise use the default auth chain (see `auth whoami`)                   |
 
-**JSON format** (default) downloads into `dataDir/sessions/<sessionId>/`:
+**JSON format** (default) downloads into `dataDir/sessions/` and prints both paths (`--json`: `{ sessionId, metadataPath, dataPath }`):
 
-- Session metadata JSON (recording info, timestamps, URL)
-- Session data file (the full event log used for replay)
+- `<sessionId>.json` — session metadata (recording info, timestamps, URL)
+- `<sessionId>_data.json` — the full session data used for replay
 
-**Multi-file format** writes a structured directory tree. See the `meticulous-use-session-data` skill for details on the output structure.
+**Multi-file format** writes a structured directory tree and prints the output directory (`--json`: `{ sessionId, path }`). See the `meticulous-use-session-data` skill for details on the output structure.
 
 **Examples:**
 
@@ -48,10 +50,10 @@ meticulous download session --sessionId=abc123 --format=multi-file --outputDir=.
 ## download replay
 
 ```bash
-meticulous download replay --replayId=<id> [--apiToken=<token>]
+meticulous download replay --replayId=<id> [--json] [--apiToken=<token>]
 ```
 
-**Purpose:** Download a replay's metadata and full archive (screenshots, network logs, console logs) from Meticulous. Also generates human-readable log files from the raw NDJSON log.
+**Purpose:** Download a replay's metadata and full archive (screenshots, diffs, timeline, console logs, coverage) from Meticulous. Also generates human-readable log files from the raw NDJSON log.
 
 **What gets downloaded (into `dataDir/replays/<replayId>/`):**
 
@@ -74,8 +76,7 @@ meticulous download replay --replayId=<id> [--apiToken=<token>]
 
 ```bash
 meticulous download replay --replayId=rpl_xyz
-# Downloaded replay metadata to: /Users/you/.meticulous/replays/rpl_xyz/metadata.json
-# Downloaded replay data to: /Users/you/.meticulous/replays/rpl_xyz/
+# /Users/you/.meticulous/replays/rpl_xyz
 ```
 
 ---
@@ -83,10 +84,10 @@ meticulous download replay --replayId=rpl_xyz
 ## download test-run
 
 ```bash
-meticulous download test-run [--testRunId=<id>] [--apiToken=<token>]
+meticulous download test-run [--testRunId=<id|latest> | --prNumber=<n> | --commitSha=<sha>] [--project=<project>] [--scope=<scope>] [--json] [--apiToken=<token>]
 ```
 
-**Purpose:** Download data for a Meticulous test run (defaults to the most recent run). Primarily used to inspect code coverage data.
+**Purpose:** Download data for a Meticulous test run. Primarily used to inspect code coverage data. The run is resolved like the `agent` commands: `--testRunId`, else `--prNumber`, else `--commitSha`, else the current git HEAD. Pass `--testRunId=latest` for the project's latest main-branch run.
 
 **What gets downloaded (into `dataDir/test-runs/<testRunId>/`):**
 
@@ -94,19 +95,34 @@ meticulous download test-run [--testRunId=<id>] [--apiToken=<token>]
 
 **Options:**
 
-| Option        | Type   | Default         | Description                                                                    |
-| ------------- | ------ | --------------- | ------------------------------------------------------------------------------ |
-| `--testRunId` | string | `latest`        | ID of the test run to download; omit to fetch the most recent run              |
-| `--apiToken`  | string | —               | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
-| `--scope`     | string | `coverage-only` | What to download: `coverage-only` or `app-container-logs`                      |
+| Option                           | Type    | Default         | Description                                                                                                                                                                              |
+| -------------------------------- | ------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--testRunId`                    | string  | —               | ID of the test run to download, or `latest` for the project's latest main-branch run                                                                                                     |
+| `--prNumber`                     | number  | —               | Download the latest test run for this pull request's head commit                                                                                                                         |
+| `--commitSha`                    | string  | git HEAD        | Download the latest test run for this commit                                                                                                                                             |
+| `--project`                      | string  | default project | Project to look the run up in (id, `org/proj`, or `proj`); with `--testRunId`, the run must belong to it                                                                                 |
+| `--scope`                        | string  | `coverage-only` | What to download: `coverage-only`, `app-container-logs`, `coverage-pr-only`, `coverage-by-replay-pr-only` or `everything`. A later download of another scope adds only the missing files |
+| `--dontWaitForTestRunToComplete` | boolean | `false`         | Exit without downloading if the run is still in progress, instead of waiting for it                                                                                                      |
+| `--apiToken`                     | string  | —               | Meticulous API token; otherwise use the default auth chain (see `auth whoami`)                                                                                                           |
+
+The pull-request scopes need read access to the project's source code; without it the command fails rather than downloading nothing.
+
+With `--json`, prints `{ testRunId, path }` (or `{ testRunId, status }` for a run skipped by `--dontWaitForTestRunToComplete`).
 
 **Example:**
 
 ```bash
-# Download coverage for the latest test run
+# Download coverage for the test run of the current git HEAD
 meticulous download test-run
 
-# Download coverage for a specific test run
+# Download coverage for the project's latest main-branch run
+meticulous download test-run --testRunId=latest
+
+# ...of a project other than your default one
+meticulous download test-run --testRunId=latest --project=my-org/my-project
+
+# Download coverage for a specific test run or pull request
 meticulous download test-run --testRunId=tr_abc
-# Downloaded test run data to: /Users/you/.meticulous/test-runs/tr_abc/
+meticulous download test-run --prNumber=123
+# /Users/you/.meticulous/test-runs/tr_abc
 ```
