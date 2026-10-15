@@ -8,7 +8,7 @@
     {
       "name": "meticulous",
       "source": "./",
-      "description": "Agent skills for Meticulous visual regression testing — review test runs, investigate replays, debug diffs."
+      "description": "Agent skills for Meticulous visual regression testing — review test runs, investigate replays, debug diffs. Also connects the hosted Meticulous MCP server."
     }
   ]
 }
