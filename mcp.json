@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "meticulous": {
+      "url": "https://app.meticulous.ai/api/mcp"
+    }
+  }
+}
