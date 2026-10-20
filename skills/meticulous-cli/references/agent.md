@@ -58,6 +58,7 @@ The commands that read a test run (`test-run-for-commit`, `test-run-diffs`, `tes
 | `agent-swarm-runs`               | A project's Agent swarm runs, newest first, optionally for one PR           | `get_agent_swarm_runs`                                                                                                           |
 | `agent-swarm-run`                | An Agent swarm run's status and cases (default: latest for the commit)      | `get_agent_swarm_run` (`processing` until the run finishes — poll it)                                                            |
 | `agent-swarm-run-case`           | One Agent swarm case: steps, comparisons, failure check and fix prompt      | `get_agent_swarm_run_case` (`processing` until the run finishes — poll it)                                                       |
+| `agent-swarm-setup-blockers`     | Live-backend Agent swarm cases blocked by the test environment's setup      | `get_agent_swarm_setup_blockers`                                                                                                 |
 | `submit-feedback`                | Submit free-form feedback about Meticulous                                  | `submit_feedback`                                                                                                                |
 
 For full, always-current option lists, run `meticulous schema agent <command>`.
@@ -503,6 +504,29 @@ The failure check quotes source code, so `check` and `fixPrompt` are returned on
 | `--includeCounts`                   | boolean | `false` | Add `total`, `pass`, `fail`, `blocked`, `skipped`, `running` and `notStarted` columns (succeeded runs only)          |
 | `--limit`                           | number  | `100`   | 1–1000, or 1–25 (default 25) with `--includeCounts`                                                                  |
 | `--offset`                          | number  | `0`     | —                                                                                                                    |
+
+---
+
+## agent agent-swarm-setup-blockers
+
+```bash
+# CLI
+meticulous agent agent-swarm-setup-blockers [--since=<date>] [--category=<category>] [--runId=<swarmRunId>] [--limit=<n>] [--offset=<n>] [--project=<project>]
+
+# MCP
+get_agent_swarm_setup_blockers(since="<date>", category="<category>", runId="<swarmRunId>", limit=<n>, offset=<n>)
+```
+
+**Purpose:** List the setup blockers Agent swarm has recorded for a project, newest first. A setup blocker is a case that an Agent swarm run against a live backend could not verify because of the test environment — missing test data, test-user permissions, a disabled feature flag, authentication, an unhealthy backend or an unavailable external dependency — rather than because of the app's code. Runs that use mocked network responses record none. Outputs a TSV table (`createdAt`, `swarmRunId`, `caseIndex`, `caseId`, `commitSha`, `category`, `blockedBy`, `caseTitle`, `summary`, `evidence`, `suggestedFix`), with each category's count across all matching blockers on stderr. `--json` and MCP return `{ since, counts, setupBlockers }`. Pass a row's `swarmRunId` and `caseIndex` to `agent-swarm-run-case` for the case's full steps. The `meticulous-improve-test-env` skill turns these into fixes.
+
+| Option       | Type   | Default     | Description                                                                                                                     |
+| ------------ | ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `--project`  | string | default     | Project to read (id, `org/proj` or `proj`)                                                                                      |
+| `--since`    | string | 30 days ago | Only blockers recorded at or after this ISO-8601 date/time, at most 365 days ago                                                |
+| `--category` | string | all         | One of `missingTestData`, `testUserPermissions`, `featureFlag`, `authentication`, `backendError`, `externalDependency`, `other` |
+| `--runId`    | string | —           | Only blockers from this Agent swarm run (a `swarmRunId`)                                                                        |
+| `--limit`    | number | `100`       | 1–500                                                                                                                           |
+| `--offset`   | number | `0`         | —                                                                                                                               |
 
 ---
 
