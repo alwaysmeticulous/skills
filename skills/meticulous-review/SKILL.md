@@ -8,7 +8,7 @@ To work through a Meticulous test run, follow the workflow below step by step, u
 
 > Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
-While reviewing, treat yourself as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Classify each diff on its merits; fixing is a separate pass afterwards (Step 11), not something to interleave with the review. If you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-iterative-dev` skill for feature work with intended visual changes, or the `meticulous-zero-diff-task` skill when the UI must not change.
+While reviewing, treat yourself as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Classify each diff on its merits; fixing is a separate pass afterwards (Step 12), not something to interleave with the review. If you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-iterative-dev` skill for feature work with intended visual changes, or the `meticulous-zero-diff-task` skill when the UI must not change.
 
 ## Step 0 -- Establish what's expected
 
@@ -49,9 +49,9 @@ meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeRevie
 get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
 ```
 
-The `--only*` flags are additive (a diff that's rejected, has an open comment, or both) and are never capped to the representative subset. In what it returns, a rejection, or a comment asking for a change (`diff-comments` / `get_diff_comments` shows the thread), makes a diff a **fix target** for Step 11. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores) is neither: leave that diff as it is.
+The `--only*` flags are additive (a diff that's rejected, has an open comment, or both) and are never capped to the representative subset. In what it returns, a rejection, or a comment asking for a change (`diff-comments` / `get_diff_comments` shows the thread), makes a diff a **fix target** for Step 12. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores) is neither: leave that diff as it is.
 
-If no row of the first list needs reviewing, go straight to Step 7 (any fix targets are handled in Step 11). Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
+If no row of the first list needs reviewing, go straight to Step 7 (any fix targets are handled in Step 12). Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
 
 ## Step 2 -- Get screenshot images
 
@@ -136,7 +136,7 @@ When unsure, leave the diff undecided and explain with `create-diff-comment`.
 
 **Report likely engine bugs.** Add `--reportFlake` when ignoring a diff where the replay was nondeterministic although Meticulous should have made it deterministic — rendering, animations, timers, dates, randomness, network ordering, or a replay that took a different path. Meticulous then investigates it as a likely replay-engine bug. Report each flake once per run, not on every diff it shows up in: when one cause produces the same flake across many diffs (e.g. a clock or an animation that differs on every screen), ignore each of those diffs but add `--reportFlake` to only one of them. Leave it off for a genuine difference in what the app served (a server-rendered timestamp, a build version, third-party content): the app's owner fixes those, e.g. by hiding the element with the `meticulous-ignore` class.
 
-**Review first, fix afterwards.** Don't make code changes while reviewing: finish classifying and flagging every diff, then deal with what needs fixing in Step 11.
+**Review first, fix afterwards.** Don't make code changes while reviewing: finish classifying and flagging every diff, then deal with what needs fixing in Step 12.
 
 ## Step 6 -- Flag or approve the diff
 
@@ -162,7 +162,9 @@ Call `approve-diff` for every diff classified as expected. Unlike reject and ign
 
 **Not symmetric:** `reject-diff` writes a real, blocking decision, same as a human rejection. Where `approve-diff` is available, `approve-diff` and `ignore-diff` also write real decisions that clear the diff. Otherwise `ignore-diff` decides nothing — it's a comment only, so the diff stays `unreviewed` and the check stays pending — so don't oversell it in your final report as having resolved anything.
 
-**Where `approve-diff` is available, finish with a pass over every remaining diff.** Step 1 returned only a representative subset, and the check passes only once every diff has a decision. So when you've worked through that subset, list what's still undecided:
+## Step 7 -- Decide the remaining diffs (only where `approve-diff` is available)
+
+Steps 1–6 covered only the representative subset, and the check passes only once every diff has a decision. Skip this step if Step 6 found `approve-diff` unavailable: without it, nothing here can clear the check. Otherwise — including when Step 1 found nothing in the subset to review — list what's still undecided across the whole run:
 
 ```bash
 # CLI
@@ -172,9 +174,9 @@ meticulous agent test-run-diffs --includeAllDiffs --onlyUnreviewed --includeRevi
 get_test_run_diffs(testRunId="<id>", includeAllDiffs=true, onlyUnreviewed=true, includeReviews=true)
 ```
 
-Take each row without open comments through Steps 2–6 like the first ones; a row with open comments was already covered by Step 1's second query. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
+Take each row without open comments through Steps 2–6 like the first ones; a row with open comments was already covered by Step 1's second query. If you haven't called `approve-diff` yet, you find out whether it's available on the first row you classify as expected, as in Step 6 — if it isn't, stop this step there. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
 
-## Step 7 -- Review non-visual checks (only if the run has any)
+## Step 8 -- Review non-visual checks (only if the run has any)
 
 Besides screenshot diffs, a run can carry non-visual checks: builtin ones such as `accessibility`, `network-requests` and `react-component-renders`, and custom ones the project's own CI reports. Most projects have none, so first find out whether this run does:
 
@@ -186,7 +188,7 @@ meticulous agent test-run-check --availableIds
 get_test_run_check_available_ids(testRunId="<id>")
 ```
 
-If this is refused because the project isn't set up for checks, there are no checks to review: skip to Step 8. An empty list can also mean results haven't been reported yet, so retry as the command's notice says before concluding there are none.
+If this is refused because the project isn't set up for checks, there are no checks to review: skip to Step 9. An empty list can also mean results haven't been reported yet, so retry as the command's notice says before concluding there are none.
 
 For each listed check, fetch its report:
 
@@ -224,7 +226,7 @@ This works like Step 6, with these differences:
 - **`approve-check` and `ignore-check` need Enable approve/ignore check actions**, a separate project setting from the diff one. Without it both are refused: unlike `ignore-diff`, there is no comment-only fallback. Over MCP they're only offered when it's on. If they're refused, leave the check undecided and name it in your final report as needing a human decision. `reject-check` always works.
 - There's no neutral comment for a check. When unsure, leave it undecided and explain why in your final report.
 
-## Step 8 -- Summarize Agent swarm results (only if the commit has any)
+## Step 9 -- Summarize Agent swarm results (only if the commit has any)
 
 Some projects also run Agent swarm, Meticulous's hosted agent that tests a pull request's build in a browser and reports a handful of test cases, each `pass`, `fail`, `blocked` or `skipped`. There's nothing to approve, reject or ignore: its results are informational, except for cases with a fix prompt. Look for a run on the same commit:
 
@@ -236,7 +238,7 @@ meticulous agent agent-swarm-run
 get_agent_swarm_run(commitSha="<sha>")
 ```
 
-If it reports no Agent swarm run for the commit, or only a plan-only one, skip to Step 9. If the run is still in progress after 10 minutes, didn't complete (its `errorMessage` says why), or was found not testable (`notTestable`), just note that for the final report.
+If it reports no Agent swarm run for the commit, or only a plan-only one, skip to Step 10. If the run is still in progress after 10 minutes, didn't complete (its `errorMessage` says why), or was found not testable (`notTestable`), just note that for the final report.
 
 Otherwise read through all of its cases (`title`, `status`, `outcomeSummary`), to get an idea of what was tested and what wasn't. The cases that matter are the ones with a **fix prompt**: a failure upheld by an independent checker, with a ready-made prompt for fixing it. Only a `fail` case can have one, so fetch each of those and check whether its output has a `fixPrompt`:
 
@@ -248,21 +250,21 @@ meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
 get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
 ```
 
-Whether a case has one matters more than what it says: report it — it's a fix target for Step 11.
+Whether a case has one matters more than what it says: report it — it's a fix target for Step 12.
 
-## Step 9 -- Final report
+## Step 10 -- Final report
 
-Cover **all significant visual changes**, plus any failing checks from Step 7 and an Agent swarm summary from Step 8.
+Cover **all significant visual changes**, plus any failing checks from Step 8 and an Agent swarm summary from Step 9.
 
 1. **Expected changes** — brief, a line or two each: what changed, which Step 0 expectation it matches, and whether you approved it.
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you approved, rejected or ignored it (or left it undecided), and your reason in full, since the app doesn't show it.
 4. **Agent swarm** (if the commit has a run) — a line or two, linked to `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`: the outcomes (e.g. "4 cases: 3 passed, 1 blocked") and roughly what they covered, or why the run didn't complete or wasn't testable. Name each failed case and its `outcomeSummary`, and point out the ones with a fix prompt, which the `meticulous-fix` skill can work from.
-5. **Already reviewed** (if Step 1 found any) — diffs someone had already rejected or commented on, with what each comment asks for, and whether you'll fix them next (Step 11) or are leaving them for the PR's author.
+5. **Already reviewed** (if Step 1 found any) — diffs someone had already rejected or commented on, with what each comment asks for, and whether you'll fix them next (Step 12) or are leaving them for the PR's author.
 
 The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
 
-## Step 10 -- Report feedback to Meticulous
+## Step 11 -- Report feedback to Meticulous
 
 **Always do this to close the review — it's part of the review itself, not something the user has to ask for.** Submit one brief note: did Meticulous catch a real problem, was anything confusing, what would have made the review easier. Positive feedback counts too — this isn't just for reporting friction.
 
@@ -274,10 +276,10 @@ meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<h
 submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hindered>", testRunId="<id>", skill="meticulous-review")
 ```
 
-## Step 11 -- Hand off what needs fixing
+## Step 12 -- Hand off what needs fixing
 
-Collect the fix targets: diffs someone rejected or commented on asking for a change (Step 1), diffs and checks you rejected in this review (Steps 6–7), and Agent swarm cases with a fix prompt (Step 8). If there are none, you're done.
+Collect the fix targets: diffs someone rejected or commented on asking for a change (Step 1), diffs and checks you rejected in this review (Steps 6–8), and Agent swarm cases with a fix prompt (Step 9). If there are none, you're done.
 
 - **If you're working on this PR's code** — you implemented the change, or the user asked you to get the PR passing — follow the `meticulous-fix` skill for them now. It reads the comments, fixes the code, replies on each thread, pushes and confirms on the next run.
-- **If you're only reviewing** someone else's PR, don't change their code: the final report (Step 9) already names the fix targets for the PR's author, so you're done.
+- **If you're only reviewing** someone else's PR, don't change their code: the final report (Step 10) already names the fix targets for the PR's author, so you're done.
 - **If the run is of a local build** rather than a pushed commit (as when the `meticulous-test` skill sent you here), stop after the final report: `meticulous-fix` commits, pushes and waits for CI, which isn't how that loop iterates.
