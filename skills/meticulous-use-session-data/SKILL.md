@@ -6,7 +6,7 @@ user-invocable: true
 
 Use this workflow to get structured session data from Meticulous — the recorded user flows and network mocks that cover your code changes.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Step 1 — Find relevant sessions and download their data
 

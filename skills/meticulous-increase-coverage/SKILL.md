@@ -6,7 +6,7 @@ user-invocable: true
 
 # Increase coverage for a Meticulous project
 
-> Run `meticulous-cli-update` first if you haven't already this conversation (it also covers authentication and project selection).
+> Run `meticulous-update` first if you haven't already this conversation (it also covers authentication and project selection).
 
 ## What you deliver
 
