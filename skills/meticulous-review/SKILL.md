@@ -36,10 +36,22 @@ Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, prio
 The review state decides what each row needs:
 
 - **`unreviewed`, no open comments** — review it: Steps 2–6.
-- **`rejected`, or open comments** — someone has already looked at it, so don't re-review it. A rejection, or a comment asking for a change, makes it a **fix target** for Step 11. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores) is neither: leave that diff as it is.
+- **`rejected`, or open comments** — someone has already looked at it, so don't re-review it; the query below picks it up.
 - **`accepted` or `ignored`**, no open comments — already decided; nothing to do.
 
-If no row needs reviewing, go straight to Step 7 (any fix targets are handled in Step 11). Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
+That list is only a representative subset, so a diff someone already rejected or commented on can be missing from it. Collect those across the whole run with a second query:
+
+```bash
+# CLI
+meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeReviews
+
+# MCP
+get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
+```
+
+The `--only*` flags are additive (a diff that's rejected, has an open comment, or both) and are never capped to the representative subset. In what it returns, a rejection, or a comment asking for a change (`diff-comments` / `get_diff_comments` shows the thread), makes a diff a **fix target** for Step 11. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores) is neither: leave that diff as it is.
+
+If no row of the first list needs reviewing, go straight to Step 7 (any fix targets are handled in Step 11). Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
 
 ## Step 2 -- Get screenshot images
 
@@ -154,13 +166,13 @@ Call `approve-diff` for every diff classified as expected. Unlike reject and ign
 
 ```bash
 # CLI
-meticulous agent test-run-diffs --includeAllDiffs --onlyUnreviewed
+meticulous agent test-run-diffs --includeAllDiffs --onlyUnreviewed --includeReviews
 
 # MCP
-get_test_run_diffs(testRunId="<id>", includeAllDiffs=true, onlyUnreviewed=true)
+get_test_run_diffs(testRunId="<id>", includeAllDiffs=true, onlyUnreviewed=true, includeReviews=true)
 ```
 
-Take each row through Steps 2–6 like the first ones. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
+Take each row without open comments through Steps 2–6 like the first ones; a row with open comments was already covered by Step 1's second query. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
 
 ## Step 7 -- Review non-visual checks (only if the run has any)
 
