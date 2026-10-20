@@ -36,22 +36,10 @@ Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, prio
 The review state decides what each row needs:
 
 - **`unreviewed`, no open comments** — review it: Steps 2–6.
-- **`rejected`, or open comments** — someone has already looked at it, so don't re-review it; the query below picks it up.
+- **`rejected`, or open comments** — someone has already looked at it, so don't re-review it; Step 7 picks it up.
 - **`accepted` or `ignored`**, no open comments — already decided; nothing to do.
 
-That list is only a representative subset, so a diff someone already rejected or commented on can be missing from it. Collect those across the whole run with a second query:
-
-```bash
-# CLI
-meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeReviews
-
-# MCP
-get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
-```
-
-The `--only*` flags are additive (a diff that's rejected, has an open comment, or both) and are never capped to the representative subset. In what it returns, a rejection, or a comment asking for a change (`diff-comments` / `get_diff_comments` shows the thread), makes a diff a **fix target** for Step 12. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores) is neither: leave that diff as it is.
-
-If no row of the first list needs reviewing, go straight to Step 7 (any fix targets are handled in Step 12). Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
+If no row needs reviewing, go straight to Step 7. Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
 
 ## Step 2 -- Get screenshot images
 
@@ -162,9 +150,23 @@ Call `approve-diff` for every diff classified as expected. Unlike reject and ign
 
 **Not symmetric:** `reject-diff` writes a real, blocking decision, same as a human rejection. Where `approve-diff` is available, `approve-diff` and `ignore-diff` also write real decisions that clear the diff. Otherwise `ignore-diff` decides nothing — it's a comment only, so the diff stays `unreviewed` and the check stays pending — so don't oversell it in your final report as having resolved anything.
 
-## Step 7 -- Decide the remaining diffs (only where `approve-diff` is available)
+## Step 7 -- Go through the rest of the run
 
-Steps 1–6 covered only the representative subset, and the check passes only once every diff has a decision. Skip this step if Step 6 found `approve-diff` unavailable: without it, nothing here can clear the check. Otherwise — including when Step 1 found nothing in the subset to review — list what's still undecided across the whole run:
+Steps 1–6 covered only the representative subset. Do this step even when Step 1 found nothing in it to review.
+
+**Collect the fix targets.** List every diff in the run that's rejected or has an open comment:
+
+```bash
+# CLI
+meticulous agent test-run-diffs --onlyRejected --onlyWithComments --includeReviews
+
+# MCP
+get_test_run_diffs(testRunId="<id>", onlyRejected=true, onlyWithComments=true, includeReviews=true)
+```
+
+The `--only*` flags are additive (a diff that's rejected, has an open comment, or both) and are never capped to the representative subset. A rejection, or a comment asking for a change (`diff-comments` / `get_diff_comments` shows the thread), makes a diff a **fix target** for Step 12 — including the diffs you rejected yourself. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores), or a note you left on a diff you were unsure about, is not.
+
+**Decide the remaining diffs (only where `approve-diff` is available).** The check passes only once every diff has a decision. Skip this part if Step 6 found `approve-diff` unavailable: without it, nothing here can clear the check. Otherwise, list what's still undecided:
 
 ```bash
 # CLI
@@ -174,7 +176,7 @@ meticulous agent test-run-diffs --includeAllDiffs --onlyUnreviewed --includeRevi
 get_test_run_diffs(testRunId="<id>", includeAllDiffs=true, onlyUnreviewed=true, includeReviews=true)
 ```
 
-Take each row without open comments through Steps 2–6 like the first ones; a row with open comments was already covered by Step 1's second query. If you haven't called `approve-diff` yet, you find out whether it's available on the first row you classify as expected, as in Step 6 — if it isn't, stop this step there. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
+Take each row without open comments through Steps 2–6 like the first ones; a row with open comments is covered above. If you haven't called `approve-diff` yet, you find out whether it's available on the first row you classify as expected, as in Step 6 — if it isn't, stop there. Keep `--includeAllDiffs`: without it, `--onlyUnreviewed` stays capped to the representative subset for as long as any diff in it is still undecided.
 
 ## Step 8 -- Review non-visual checks (only if the run has any)
 
@@ -260,7 +262,7 @@ Cover **all significant visual changes**, plus any failing checks from Step 8 an
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you approved, rejected or ignored it (or left it undecided), and your reason in full, since the app doesn't show it.
 4. **Agent swarm** (if the commit has a run) — a line or two, linked to `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`: the outcomes (e.g. "4 cases: 3 passed, 1 blocked") and roughly what they covered, or why the run didn't complete or wasn't testable. Name each failed case and its `outcomeSummary`, and point out the ones with a fix prompt, which the `meticulous-fix` skill can work from.
-5. **Already reviewed** (if Step 1 found any) — diffs someone had already rejected or commented on, with what each comment asks for, and whether you'll fix them next (Step 12) or are leaving them for the PR's author.
+5. **Already reviewed** (if Step 7 found any) — diffs someone else had rejected or commented on, with what each comment asks for, and whether you'll fix them next (Step 12) or are leaving them for the PR's author.
 
 The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
 
@@ -278,7 +280,7 @@ submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hinde
 
 ## Step 12 -- Hand off what needs fixing
 
-Collect the fix targets: diffs someone rejected or commented on asking for a change (Step 1), diffs and checks you rejected in this review (Steps 6–8), and Agent swarm cases with a fix prompt (Step 9). If there are none, you're done.
+Collect the fix targets: the diffs from Step 7 (including the ones you rejected), the checks you rejected (Step 8), and Agent swarm cases with a fix prompt (Step 9). If there are none, you're done.
 
 - **If you're working on this PR's code** — you implemented the change, or the user asked you to get the PR passing — follow the `meticulous-fix` skill for them now. It reads the comments, fixes the code, replies on each thread, pushes and confirms on the next run.
 - **If you're only reviewing** someone else's PR, don't change their code: the final report (Step 10) already names the fix targets for the PR's author, so you're done.
