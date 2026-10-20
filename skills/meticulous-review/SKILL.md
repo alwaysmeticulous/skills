@@ -1,14 +1,14 @@
 ---
 name: meticulous-review
-description: Analyze a completed Meticulous test run — compare the diffs (and any failing non-visual checks) against the PR description to see what's expected, then focus on finding and flagging potential regressions, and summarize any Agent swarm results. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID, commit SHA or PR number. Use when asked to review Meticulous test results, when babysitting a pull/merge request's Meticulous Tests CI check, or right after implementing a frontend change yourself.
+description: Work through a Meticulous test run's results, reacting to their review state — review the unreviewed diffs (and any failing non-visual checks) against what the PR is meant to change, flagging potential regressions; when you're working on the PR's code, hand what needs fixing (diffs someone rejected or commented on, and your own rejections) to the `meticulous-fix` skill; also summarizes any Agent swarm results. Resolves the test run from the local repo's current commit (the default), or from an explicit test-run ID, commit SHA or PR number. Use whenever a run's results matter — reviewing a pull/merge request, right after pushing a frontend change yourself, when its Meticulous CI check is failing or pending, or when asked to look at Meticulous results.
 user-invocable: true
 ---
 
-To review a Meticulous test run, follow the workflow below step by step, using the CLI or MCP commands as described.
+To work through a Meticulous test run, follow the workflow below step by step, using the CLI or MCP commands as described. You don't need to know up front whether the run still needs reviewing or someone has already reviewed it: Step 1 reads its review state, and that decides what follows.
 
 > Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
-This skill treats you as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Its job is to catch regressions, not to iterate on the implementation (if you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-iterative-dev` skill for feature work with intended visual changes, or the `meticulous-zero-diff-task` skill when the UI must not change; if diffs have already been reviewed and rejected and you're just here to fix what's flagged, see the `meticulous-fix` skill).
+While reviewing, treat yourself as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Classify each diff on its merits; fixing is a separate pass afterwards (Step 11), not something to interleave with the review. If you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-iterative-dev` skill for feature work with intended visual changes, or the `meticulous-zero-diff-task` skill when the UI must not change.
 
 ## Step 0 -- Establish what's expected
 
@@ -18,22 +18,28 @@ Before looking at any diff, work out what visual change this PR is _supposed_ to
 - **Otherwise** — fetch the PR description (e.g. `gh pr view <number> --json title,body` for GitHub, `glab mr view <id> --output json --jq '{title,description}'` for GitLab, or for Bitbucket `twg bitbucket pull-requests get <id>` if the [Teamwork Graph CLI](https://developer.atlassian.com/cloud/twg-cli/) is available — follow its `twg-engineering-work` skill if that's installed, and run `twg setup bitbucket` once if it asks for a Bitbucket token — else `GET /2.0/repositories/{workspace}/{repo_slug}/pullrequests/{id}?fields=title,description`) and pull out a brief bullet-point summary of any visual changes it calls out as expected.
 - If it doesn't mention any, note that explicitly — every diff below then gets extra scrutiny, since there's nothing on record it could be a known, accepted consequence of.
 
-## Step 1 -- Get the replay diff summary
+## Step 1 -- Get the replay diff summary, with its review state
 
 Run from the local checkout to resolve the test run from the current commit's git HEAD — make sure HEAD matches the remote head CI ran on first (e.g. `git pull`), or you may review a stale or missing run:
 
 ```bash
 # CLI (infers the run from local git HEAD)
-meticulous agent test-run-diffs
+meticulous agent test-run-diffs --includeReviews
 
 # MCP (git context is never inferred — resolve the testRunId from a commit first)
 get_test_run_for_commit(commitSha="<sha>")
-get_test_run_diffs(testRunId="<id>")
+get_test_run_diffs(testRunId="<id>", includeReviews=true)
 ```
 
-Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, priority-ordered subset of real visual differences; work through them top to bottom. To target a run explicitly instead of resolving from HEAD, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (on MCP, `get_test_run_diffs(prNumber=<n>)` skips the `get_test_run_for_commit` step). The CLI blocks until the run finishes by default (pass `--dontWaitForTestRunToComplete` to instead report an in-progress run and exit immediately); MCP never blocks, so keep polling until `status` is `complete`/`failed`.
+Returns a TSV of `replayDiffId`/`screenshotName` rows — a representative, priority-ordered subset of real visual differences; work through them top to bottom. `--includeReviews` adds each row's `decision` and `openComments`. To target a run explicitly instead of resolving from HEAD, pass `--testRunId <id>`, `--commitSha <sha>` or `--prNumber <n>` (on MCP, `get_test_run_diffs(prNumber=<n>)` skips the `get_test_run_for_commit` step). The CLI blocks until the run finishes by default (pass `--dontWaitForTestRunToComplete` to instead report an in-progress run and exit immediately); MCP never blocks, so keep polling until `status` is `complete`/`failed`.
 
-Every returned row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
+The review state decides what each row needs:
+
+- **`unreviewed`, no open comments** — review it: Steps 2–6.
+- **`rejected`, or open comments** — someone has already looked at it, so don't re-review it. A rejection, or a comment asking for a change, makes it a **fix target** for Step 11. A comment that only explains an ignore or an approval (as this skill's own `ignore-diff` and `approve-diff` leave — an ignore stays `unreviewed` on projects without agent ignores) is neither: leave that diff as it is.
+- **`accepted` or `ignored`**, no open comments — already decided; nothing to do.
+
+If no row needs reviewing, go straight to Step 7 (any fix targets are handled in Step 11). Otherwise every unreviewed row must be matched against Step 0 or flagged (see the Decision guide) before concluding the PR is good.
 
 ## Step 2 -- Get screenshot images
 
@@ -118,7 +124,7 @@ When unsure, leave the diff undecided and explain with `create-diff-comment`.
 
 **Report likely engine bugs.** Add `--reportFlake` when ignoring a diff where the replay was nondeterministic although Meticulous should have made it deterministic — rendering, animations, timers, dates, randomness, network ordering, or a replay that took a different path. Meticulous then investigates it as a likely replay-engine bug. Report each flake once per run, not on every diff it shows up in: when one cause produces the same flake across many diffs (e.g. a clock or an animation that differs on every screen), ignore each of those diffs but add `--reportFlake` to only one of them. Leave it off for a genuine difference in what the app served (a server-rendered timestamp, a build version, third-party content): the app's owner fixes those, e.g. by hiding the element with the `meticulous-ignore` class.
 
-**This skill reviews and flags — it does not fix.** Hand a rejected diff off to the `meticulous-fix` skill (or the person/skill implementing the change) — don't attempt code changes here.
+**Review first, fix afterwards.** Don't make code changes while reviewing: finish classifying and flagging every diff, then deal with what needs fixing in Step 11.
 
 ## Step 6 -- Flag or approve the diff
 
@@ -230,7 +236,7 @@ meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
 get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
 ```
 
-Whether a case has one matters more than what it says: report it, and leave fixing it to the `meticulous-fix` skill (or the person/skill implementing the change).
+Whether a case has one matters more than what it says: report it — it's a fix target for Step 11.
 
 ## Step 9 -- Final report
 
@@ -240,12 +246,13 @@ Cover **all significant visual changes**, plus any failing checks from Step 7 an
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
 3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you approved, rejected or ignored it (or left it undecided), and your reason in full, since the app doesn't show it.
 4. **Agent swarm** (if the commit has a run) — a line or two, linked to `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`: the outcomes (e.g. "4 cases: 3 passed, 1 blocked") and roughly what they covered, or why the run didn't complete or wasn't testable. Name each failed case and its `outcomeSummary`, and point out the ones with a fix prompt, which the `meticulous-fix` skill can work from.
+5. **Already reviewed** (if Step 1 found any) — diffs someone had already rejected or commented on, with what each comment asks for, and whether you'll fix them next (Step 11) or are leaving them for the PR's author.
 
 The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
 
 ## Step 10 -- Report feedback to Meticulous
 
-**Always do this as the last step — it's part of the review itself, not something the user has to ask for.** Submit one brief note: did Meticulous catch a real problem, was anything confusing, what would have made the review easier. Positive feedback counts too — this isn't just for reporting friction.
+**Always do this to close the review — it's part of the review itself, not something the user has to ask for.** Submit one brief note: did Meticulous catch a real problem, was anything confusing, what would have made the review easier. Positive feedback counts too — this isn't just for reporting friction.
 
 ```bash
 # CLI
@@ -254,3 +261,11 @@ meticulous agent submit-feedback --message="<one or two sentences>" --outcome=<h
 # MCP
 submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hindered>", testRunId="<id>", skill="meticulous-review")
 ```
+
+## Step 11 -- Hand off what needs fixing
+
+Collect the fix targets: diffs someone rejected or commented on asking for a change (Step 1), diffs and checks you rejected in this review (Steps 6–7), and Agent swarm cases with a fix prompt (Step 8). If there are none, you're done.
+
+- **If you're working on this PR's code** — you implemented the change, or the user asked you to get the PR passing — follow the `meticulous-fix` skill for them now. It reads the comments, fixes the code, replies on each thread, pushes and confirms on the next run.
+- **If you're only reviewing** someone else's PR, don't change their code: the final report (Step 9) already names the fix targets for the PR's author, so you're done.
+- **If the run is of a local build** rather than a pushed commit (as when the `meticulous-test` skill sent you here), stop after the final report: `meticulous-fix` commits, pushes and waits for CI, which isn't how that loop iterates.

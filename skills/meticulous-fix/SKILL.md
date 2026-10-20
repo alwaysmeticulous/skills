@@ -1,6 +1,6 @@
 ---
 name: meticulous-fix
-description: Fix the visual diffs (and any non-visual checks) that have been reviewed and rejected on a Meticulous test run, following their review comments if given, plus any Agent swarm fix prompts on the same commit. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes.
+description: Fix the visual diffs (and any non-visual checks) that have been reviewed and rejected on a Meticulous test run, following their review comments if given, plus any Agent swarm fix prompts on the same commit. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes, or when the `meticulous-review` skill hands off what needs fixing on a change you're working on.
 user-invocable: true
 ---
 
