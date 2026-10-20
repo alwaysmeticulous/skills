@@ -18,18 +18,18 @@ This skill normally runs as a sub-step of another Meticulous skill. The install/
 
 - You generally can't tell in advance whether a command is whitelisted. If it's whitelisted it runs silently; if not, attempting it surfaces a permission prompt. Either outcome is fine — let that be how you find out.
 - **If a command needs permission you don't have** (a prompt appears, or the user declines it), treat that as the signal to _recommend rather than force_. Tell the user it's recommended to do XYZ — e.g. "It's recommended to update the Meticulous CLI by running `npm install --global @alwaysmeticulous/cli@latest`" — and move on. A declined prompt is **not** a failure; it just means "do it later."
-- **If the user doesn't want to run it now, continue anyway.** Do not stop the workflow; carry on with the remaining steps and then return to the calling skill. The only hard requirement is a way to reach Meticulous at all (Step 1) — if neither the MCP server nor the CLI is available, no Meticulous skill can proceed, so stop there.
+- **If the user doesn't want to run it now, continue anyway.** Do not stop the workflow; carry on with the remaining steps and then return to the calling skill. The only hard requirement is a connection the calling skill can use (Step 1) — if neither the MCP server nor the CLI is available, no Meticulous skill can proceed, so stop there. Also stop when the calling skill needs the CLI (the exception in Step 1) and the user declines to install it: an MCP connection does not cover those commands.
 
-The read-only checks (`meticulous --version`, `npm view …`, `meticulous auth whoami`, and the MCP `whoami`/`get_project` tools) are safe to run directly.
+The read-only checks (`meticulous --version`, `npx --no-install @alwaysmeticulous/cli --version`, `npm view …`, `meticulous auth whoami`, and the MCP `whoami`/`get_project` tools) are safe to run directly.
 
 ## Step 1 — Find out how Meticulous is connected
 
 - **MCP** — check whether Meticulous MCP tools (such as `whoami` and `get_test_run_diffs`) are available. They usually come from the Meticulous plugin, or from a connector the user or their organization added. If they are, prefer them.
-- **CLI** — run `meticulous --version`. If that isn't found, try `npx @alwaysmeticulous/cli --version`, and if that works, call the CLI that way wherever a skill says `meticulous`.
+- **CLI** — run `meticulous --version`. If that isn't found, try `npx --no-install @alwaysmeticulous/cli --version`. Pass `--no-install`: without it `npx` downloads the package (in a non-interactive shell, without asking), so a successful run is not a presence check. If that command fails, the CLI is not installed — do not retry it without `--no-install`. If it works, call the CLI that way wherever a skill says `meticulous`.
 
 Then:
 
-- **MCP available** — the server is always on the latest version, so there's nothing to update: go to Step 3. Exception: a calling skill that runs commands only the CLI has (local replays and simulations, as in `meticulous-iterative-dev` and `meticulous-simulate-and-diff`) needs the CLI as well, so also follow the CLI path below for it.
+- **MCP available** — the server is always on the latest version, so there's nothing to update: go to Step 3. Exception: a calling skill that runs commands only the CLI has needs the CLI as well. That is `meticulous-iterative-dev` and `meticulous-simulate-and-diff` (local replays and simulations) and `meticulous-use-session-data` (`local relevant-sessions` downloads coverage-selected sessions to disk; `get_sessions` / `get_session_data` are not substitutes). If the CLI is already available, also continue with Step 2. If it isn't, install it (`npm install --global @alwaysmeticulous/cli@latest`, best-effort as above) and then do Step 2. If the user declines that install, stop.
 - **CLI available** — continue with Step 2.
 - **Neither** — suggest the user either add the MCP server (on Claude Code, Codex and Cursor, the Meticulous plugin connects it and adds these skills in one go) or install the CLI (`npm install --global @alwaysmeticulous/cli@latest`), ask which they'd prefer, and point them to the [setup docs](https://app.meticulous.ai/docs/agents/setup). Stop until one of them is available.
 
@@ -56,9 +56,17 @@ If the installed version already matches the latest, skip to Step 3. Otherwise, 
   yarn add --dev @alwaysmeticulous/cli@latest
   ```
 
-If the update ran, re-run `meticulous --version` and confirm it matches the latest before proceeding.
+- **Only in the npx cache** (`which meticulous` finds nothing and `@alwaysmeticulous/cli` is not in the project's `package.json` — Step 1 reached it with `npx --no-install`):
+
+  ```bash
+  npx --yes @alwaysmeticulous/cli@latest --version
+  ```
+
+If the update ran, re-run the same version command Step 1 used (`meticulous --version`, or `npx --no-install @alwaysmeticulous/cli --version`) and confirm it matches the latest before proceeding.
 
 ## Step 3 — Check authentication and project selection
+
+Authenticate only the connection Step 1 is using. MCP sign-in (the client's `/mcp` flow, `codex mcp login`, or the client's MCP settings) and `meticulous auth login` are different credential stores — an MCP `whoami` success does not log the CLI in, and a CLI login does not authenticate the MCP server. Follow **Over MCP** when MCP tools are available, **Over the CLI** when the CLI is available and MCP is not, and both when Step 1 kept the CLI as well as MCP (the calling skill needs commands only the CLI has). Do not run `meticulous auth whoami` unless the CLI is installed.
 
 ### Over MCP
 
