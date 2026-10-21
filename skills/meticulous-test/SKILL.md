@@ -6,7 +6,7 @@ user-invocable: true
 
 To test a frontend change using Meticulous, follow the workflow below step by step, using the CLI or MCP commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 If you are already given a test run id, skip to Step 4.
 
