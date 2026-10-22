@@ -2,7 +2,7 @@
 
 Commands for downloading Meticulous artifacts to the local `dataDir` (default `~/.meticulous`). All commands are idempotent — if the artifact already exists locally it will not be re-fetched.
 
-**Output:** stdout carries only the path(s) the data was written to — or, with `--json`, an object naming them. Progress logs go to stderr and only appear with `--verbose`.
+**Output:** stdout carries only the path(s) the data was written to — or, with `--json`, an object naming them. Progress logs go to stderr and only appear with `--logLevel info`.
 
 ## download session
 

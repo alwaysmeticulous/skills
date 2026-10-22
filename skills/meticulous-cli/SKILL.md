@@ -46,11 +46,11 @@ See the reference for each group for full option details:
 
 These options are accepted by every command:
 
-| Option       | Type   | Default         | Description                                                                  |
-| ------------ | ------ | --------------- | ---------------------------------------------------------------------------- |
-| `--logLevel` | string | `info`          | Log verbosity: `trace`, `debug`, `info`, `warn`, `error`, `silent`           |
-| `--dataDir`  | string | `~/.meticulous` | Directory where sessions, replays, and other data are stored                 |
-| `--jsonArgs` | string | —               | Pass all options as a JSON string (useful for programmatic/agent invocation) |
+| Option       | Type   | Default         | Description                                                                                                                                              |
+| ------------ | ------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--logLevel` | string | `info`          | Log verbosity: `trace`, `debug`, `info`, `warn`, `error`, `silent`. `agent` and `download` default to `warn`; pass `info` to also see progress on stderr |
+| `--dataDir`  | string | `~/.meticulous` | Directory where sessions, replays, and other data are stored                                                                                             |
+| `--jsonArgs` | string | —               | Pass all options as a JSON string (useful for programmatic/agent invocation)                                                                             |
 
 `--rawJson` is a deprecated alias for `--jsonArgs`. `--dryRun` is **not** global — it is available only on the commands that perform actions (e.g. the `ci` / `agent` run-triggering and upload commands, and `simulate`); check the command's reference or `meticulous schema <command>`.
 

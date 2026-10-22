@@ -10,11 +10,11 @@ All commands are also exposed as tools on the hosted **MCP server** (`https://ap
 
 Accepted by every `agent` command (in addition to the [global options](../SKILL.md#global-options)):
 
-| Option       | Type    | Default | Description                                                                    |
-| ------------ | ------- | ------- | ------------------------------------------------------------------------------ |
-| `--apiToken` | string  | —       | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
-| `--json`     | boolean | `false` | Emit JSON on stdout instead of the default TSV/plain-text format               |
-| `--verbose`  | boolean | `false` | Print additional progress logs on stderr                                       |
+| Option       | Type    | Default | Description                                                                             |
+| ------------ | ------- | ------- | --------------------------------------------------------------------------------------- |
+| `--apiToken` | string  | —       | Meticulous API token; otherwise use the default auth chain (see `auth whoami`)          |
+| `--json`     | boolean | `false` | Emit JSON on stdout instead of the default TSV/plain-text format                        |
+| `--logLevel` | string  | `warn`  | The global option, defaulted to `warn` here; pass `info` to also see progress on stderr |
 
 Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run-diffs`, `js-coverage`, `trigger-test-run`, `complete-base-run`) also accept `--project <id | org/name | name>` — a one-off override of your default project for that call only (it does not change the stored default; see [`auth`](auth.md)).
 
