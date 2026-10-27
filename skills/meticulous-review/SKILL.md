@@ -67,15 +67,15 @@ get_dom_diff(replayDiffId="<replayDiffId>", screenshotName="<screenshotName>")
 
 Optional: `--context <N|full>` (CLI) controls how many context lines surround each hunk (default 3).
 
-Output is a unified diff (`+`/`-`) of both sides with noise (generated ids, Meticulous's own annotations) removed, one block per change, headed by `[diff N]` and the path of the element that changed — for example (illustrative, not real output):
+Output is a unified diff (`+`/`-`) of both sides with noise (generated ids, Meticulous's own annotations) removed, one block per change, headed by `diff N at path [...]` naming the element that changed — for example (illustrative, not real output):
 
 ```
-[diff 0] at [1,0,2]
+diff 0 at path [1,0,2]
  <div class="item">
 -  <span class="label">old label</span>
 +  <span class="label" data-flag="true">new label</span>
  </div>
-[diff 1] head at [1,3]
+diff 1 at head path [1,3]
  <ul class="list">
 +  <li>new item</li>
  </ul>

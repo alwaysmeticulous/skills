@@ -248,7 +248,7 @@ get_dom(replayId="<id>", screenshotName="<name>")
 get_dom_diff(replayDiffId="<id>", screenshotName="<name>")
 ```
 
-**Purpose:** `dom` prints one replay screenshot's DOM as it was captured (or, with `--removeNoise`, as `dom-diff` compares it), pretty-printed; take the replay ID from `test-run-diffs --includeReplayIds`. `dom-diff` prints a screenshot diff's DOM diff with noise removed from both sides, as indented unified-diff hunks, each headed by `[diff <n>]` and the path of the element that changed. `--path` is an nth-child path from `<body>` (`0,2,1`), as a hunk header, or a timeline event's `user.elementAtCoordinatesPath` / `user.obscuredByPath`, names it; it narrows either command to that element. Both page by line with `--limit` (default 100) / `--offset`; counts and paging notes go to stderr. Run `meticulous schema agent <command>` for the full options.
+**Purpose:** `dom` prints one replay screenshot's DOM as it was captured (or, with `--removeNoise`, as `dom-diff` compares it), pretty-printed; take the replay ID from `test-run-diffs --includeReplayIds`. `dom-diff` prints a screenshot diff's DOM diff with noise removed from both sides, as indented unified-diff hunks, each headed by `diff <n> at path [...]`, naming the path of the element that changed. `--path` is an nth-child path from `<body>` (`0,2,1`), as a hunk header, or a timeline event's `user.elementAtCoordinatesPath` / `user.obscuredByPath`, names it; it narrows either command to that element. Both page by line with `--limit` (default 100) / `--offset`; counts and paging notes go to stderr. Run `meticulous schema agent <command>` for the full options.
 
 ## agent timeline-diff
 
