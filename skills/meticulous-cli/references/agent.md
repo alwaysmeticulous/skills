@@ -35,6 +35,7 @@ The commands that read a test run (`test-run-for-commit`, `test-run-diffs`, `tes
 | `reply-to-diff-comment`          | Reply to a review comment thread                                            | `reply_to_diff_comment`                                                                                                          |
 | `image-urls`                     | Signed URLs for a screenshot diff's images                                  | `get_image_urls`                                                                                                                 |
 | `image-files`                    | Download a screenshot diff's images to disk                                 | _(none — use `get_image_urls`)_                                                                                                  |
+| `dom`                            | One replay screenshot's DOM, or one element in it                           | `get_dom`                                                                                                                        |
 | `dom-diff`                       | DOM diff for a screenshot diff                                              | `get_dom_diff`                                                                                                                   |
 | `timeline-diff`                  | Timeline event diffs for a replay diff                                      | `get_timeline_diff`                                                                                                              |
 | `test-run-check`                 | Get the Markdown report for a non-visual check                              | `get_test_run_check`                                                                                                             |
@@ -235,23 +236,19 @@ get_image_urls(replayDiffId="<id>", screenshotName="<name>")
 | `--replayDiffId`   | string | Replay diff the screenshot belongs to (required) |
 | `--screenshotName` | string | Screenshot name (required)                       |
 
-## agent dom-diff
+## agent dom / dom-diff
 
 ```bash
 # CLI
-meticulous agent dom-diff --replayDiffId=<id> --screenshotName=<name> [--context=<N|full>]
+meticulous agent dom --replayId=<id> --screenshotName=<name> [--path=<0,2,1>] [--removeNoise]
+meticulous agent dom-diff --replayDiffId=<id> --screenshotName=<name> [--context=<N|full>] [--path=<0,2,1>]
 
 # MCP
+get_dom(replayId="<id>", screenshotName="<name>")
 get_dom_diff(replayDiffId="<id>", screenshotName="<name>")
 ```
 
-**Purpose:** Unified-diff-style DOM diff for a screenshot diff, one hunk per change.
-
-| Option             | Type             | Default | Description                                                                       |
-| ------------------ | ---------------- | ------- | --------------------------------------------------------------------------------- |
-| `--replayDiffId`   | string           | —       | Replay diff (required)                                                            |
-| `--screenshotName` | string           | —       | Screenshot name (required)                                                        |
-| `--context`        | number \| `full` | `3`     | Context lines around each hunk (`0` for none, `full` for a single full-file diff) |
+**Purpose:** `dom` prints one replay screenshot's DOM as it was captured (or, with `--removeNoise`, as `dom-diff` compares it), pretty-printed; take the replay ID from `test-run-diffs --includeReplayIds`. `dom-diff` prints a screenshot diff's DOM diff with noise removed from both sides, as indented unified-diff hunks, each headed by `[diff <n>]` and the path of the element that changed. `--path` is an nth-child path from `<body>` (`0,2,1`), as a hunk header, or a timeline event's `user.elementAtCoordinatesPath` / `user.obscuredByPath`, names it; it narrows either command to that element. Both page by line with `--limit` (default 100) / `--offset`; counts and paging notes go to stderr. Run `meticulous schema agent <command>` for the full options.
 
 ## agent timeline-diff
 
