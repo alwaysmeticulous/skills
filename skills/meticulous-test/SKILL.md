@@ -36,7 +36,7 @@ register_asset_build(uploadId="<id>", commitSha="<sha>")      # or register_cont
 - `--appDirectory` points to the build output directory (e.g. a `dist/` subfolder); `--localImageTag` is the local Docker image tag. The build mode is auto-detected.
 - The build's commit defaults to the local git HEAD. If the working tree is dirty, it is captured as an **ephemeral commit** (printed as `commitSha (local, ephemeral due to dirty working tree): …`) — see the uncommitted-changes note below.
 - Untracked files are rejected (they can't be captured) — `git add` them first.
-- Capture the `deploymentId` from stdout (pass `--verbose` to also see progress on stderr).
+- Capture the `deploymentId` from stdout.
 
 ## Step 3 -- Trigger a test run
 

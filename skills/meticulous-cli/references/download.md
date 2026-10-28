@@ -2,7 +2,7 @@
 
 Commands for downloading Meticulous artifacts to the local `dataDir` (default `~/.meticulous`). All commands are idempotent — if the artifact already exists locally it will not be re-fetched.
 
-**Output:** stdout carries only the path(s) the data was written to — or, with `--json`, an object naming them. Progress logs go to stderr and only appear with `--verbose`.
+**Output:** stdout carries only the path(s) the data was written to — or, with `--json`, an object naming them.
 
 ## download session
 
@@ -72,6 +72,8 @@ meticulous download replay --replayId=<id> [--json] [--apiToken=<token>]
 | `--replayId` | string | yes      | ID of the replay to download                                                   |
 | `--apiToken` | string | no       | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 
+With `--json`, prints `{ replayId, path }`.
+
 **Example:**
 
 ```bash
@@ -105,7 +107,9 @@ meticulous download test-run [--testRunId=<id|latest> | --prNumber=<n> | --commi
 | `--dontWaitForTestRunToComplete` | boolean | `false`         | Exit without downloading if the run is still in progress, instead of waiting for it                                                                                                      |
 | `--apiToken`                     | string  | —               | Meticulous API token; otherwise use the default auth chain (see `auth whoami`)                                                                                                           |
 
-The pull-request scopes need read access to the project's source code; without it the command fails rather than downloading nothing.
+The file formats of the scopes other than `coverage-only` and `app-container-logs` are internal and may change. The pull-request scopes need read access to the project's source code; without it the command fails rather than downloading nothing.
+
+A run that is still in progress is waited for, for at most 10 minutes, after which the command fails. `--testRunId=latest` only ever resolves to a finished run, so it never waits. Failed runs are downloaded too, so their app container logs remain available.
 
 With `--json`, prints `{ testRunId, path }` (or `{ testRunId, status }` for a run skipped by `--dontWaitForTestRunToComplete`).
 
@@ -121,8 +125,10 @@ meticulous download test-run --testRunId=latest
 # ...of a project other than your default one
 meticulous download test-run --testRunId=latest --project=my-org/my-project
 
-# Download coverage for a specific test run or pull request
+# Download coverage for a specific test run
 meticulous download test-run --testRunId=tr_abc
-meticulous download test-run --prNumber=123
 # /Users/you/.meticulous/test-runs/tr_abc
+
+# Download coverage for a pull request's head commit
+meticulous download test-run --prNumber=123
 ```

@@ -58,7 +58,7 @@ meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
 get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
 ```
 
-If the case's `check.linkedToChange` is `"no"`, the checker found that this PR didn't cause the failure, e.g. a pre-existing bug: report it rather than fixing it, unless the user asks you to.
+A failure this PR didn't cause, e.g. a pre-existing bug, is reported as `blocked` rather than `fail`, so it isn't in this list. An older run may still list one as `fail` with `check.linkedToChange` `"no"`: report it rather than fixing it, unless the user asks you to.
 
 ## Step 2 -- Read the review comments for diffs that have any
 
@@ -90,7 +90,7 @@ get_image_urls(replayDiffId="<replayDiffId>", screenshotName="<screenshotName>")
 get_dom_diff(replayDiffId="<replayDiffId>", screenshotName="<screenshotName>")
 ```
 
-See the `meticulous-review` skill's Steps 2-3 for output formats and the optional timeline (`agent timeline-diff`) if the cause still isn't clear.
+See the `meticulous-review` skill's Steps 2-3 for output formats, the DOM of one side (`agent dom`) and the optional timeline (`agent timeline-diff`) if the cause still isn't clear.
 
 **Fallback for a rejected diff with no comments:** this context is now your primary source of instruction, not just extra background — treat it the same way the `meticulous-review` skill's Decision guide would, and use your own judgment to figure out what regression the rejection is pointing at.
 

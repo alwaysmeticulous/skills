@@ -67,19 +67,21 @@ get_dom_diff(replayDiffId="<replayDiffId>", screenshotName="<screenshotName>")
 
 Optional: `--context <N|full>` (CLI) controls how many context lines surround each hunk (default 3).
 
-Output is a unified diff (`+`/`-`, indentation stripped), one `[diff N]`-headed block per independent change — for example (illustrative, not real output):
+Output is a unified diff (`+`/`-`) of both sides with noise (generated ids, Meticulous's own annotations) removed, one block per change, headed by `diff N at path [...]` naming the element that changed — for example (illustrative, not real output):
 
 ```
-[diff 0]
+diff 0 at path [1,0,2]
  <div class="item">
 -  <span class="label">old label</span>
 +  <span class="label" data-flag="true">new label</span>
  </div>
-[diff 1]
+diff 1 at head path [1,3]
  <ul class="list">
 +  <li>new item</li>
  </ul>
 ```
+
+It's paged by line (`--limit`/`--offset`, 100 lines by default); pass a hunk's path as `--path` to diff only that element. To read the DOM itself, as one replay captured it, use `agent dom --replayId <replayId> --screenshotName <screenshotName> [--path <path>]` (MCP: `get_dom`), with the replay IDs from `test-run-diffs --includeReplayIds`.
 
 ## Step 4 -- Get the replay timeline (optional, for diagnosing unexpected diffs)
 
@@ -93,7 +95,9 @@ meticulous agent timeline-diff --replayDiffId <replayDiffId>
 get_timeline_diff(replayDiffId="<replayDiffId>")
 ```
 
-TSV columns: `diff` (` ` identical, `-` removed, `+` added, `!` changed), `timeMs`, `event` (`user`/`screenshot`/`network`/`console`/etc.), `description`. Look for failed network requests, unexpected redirects, or timing anomalies that could explain a visual change.
+By default it lists only the events that differ, plus the screenshots and user events around them. TSV columns: `diff` (` ` identical, `-` removed, `+` added, `!` changed), `eventId`, `timeMs`, `kind` (`user`/`screenshot`/`network`/`console`/etc.), `description`, `count`, `changes` (for `!` rows, what changed). Look for failed network requests, unexpected redirects, mismatched user events, or timing anomalies that could explain a visual change.
+
+To dig into one row, pass its `eventId` to `agent timeline-event-diff --replayDiffId <replayDiffId> --eventId <eventId>` (MCP: `get_timeline_event_diff`), which lists that event's fields that differ between base and head. To inspect either side's full timeline on its own, use `agent timeline --replayId <replayId>` and `agent timeline-event --replayId <replayId> --eventId <eventId>` (MCP: `get_timeline`, `get_timeline_event`), with the replay IDs from `test-run-diffs --includeReplayIds`.
 
 ## Step 5 -- Decision guide
 

@@ -14,7 +14,7 @@ Accepted by every `agent` command (in addition to the [global options](../SKILL.
 | ------------ | ------- | ------- | ------------------------------------------------------------------------------ |
 | `--apiToken` | string  | —       | Meticulous API token; otherwise use the default auth chain (see `auth whoami`) |
 | `--json`     | boolean | `false` | Emit JSON on stdout instead of the default TSV/plain-text format               |
-| `--verbose`  | boolean | `false` | Print additional progress logs on stderr                                       |
+| `--logLevel` | string  | `warn`  | The global option, defaulted to `warn` here                                    |
 
 Commands that resolve a test run from a commit (`test-run-for-commit`, `test-run-diffs`, `js-coverage`, `trigger-test-run`, `complete-base-run`) also accept `--project <id | org/name | name>` — a one-off override of your default project for that call only (it does not change the stored default; see [`auth`](auth.md)).
 
@@ -35,8 +35,12 @@ The commands that read a test run (`test-run-for-commit`, `test-run-diffs`, `tes
 | `reply-to-diff-comment`          | Reply to a review comment thread                                            | `reply_to_diff_comment`                                                                                                          |
 | `image-urls`                     | Signed URLs for a screenshot diff's images                                  | `get_image_urls`                                                                                                                 |
 | `image-files`                    | Download a screenshot diff's images to disk                                 | _(none — use `get_image_urls`)_                                                                                                  |
+| `dom`                            | One replay screenshot's DOM, or one element in it                           | `get_dom`                                                                                                                        |
 | `dom-diff`                       | DOM diff for a screenshot diff                                              | `get_dom_diff`                                                                                                                   |
 | `timeline-diff`                  | Timeline event diffs for a replay diff                                      | `get_timeline_diff`                                                                                                              |
+| `timeline-event-diff`            | How one timeline event differs between a replay diff's base and head        | `get_timeline_event_diff`                                                                                                        |
+| `timeline`                       | One replay's timeline events                                                | `get_timeline`                                                                                                                   |
+| `timeline-event`                 | The full details of one event in a replay's timeline                        | `get_timeline_event`                                                                                                             |
 | `test-run-check`                 | Get the Markdown report for a non-visual check                              | `get_test_run_check`                                                                                                             |
 | `test-run-check --availableIds`  | List the check IDs available for a test run                                 | `get_test_run_check_available_ids`                                                                                               |
 | `check-comments`                 | Review comments for a non-visual check                                      | `get_check_comments`                                                                                                             |
@@ -235,39 +239,37 @@ get_image_urls(replayDiffId="<id>", screenshotName="<name>")
 | `--replayDiffId`   | string | Replay diff the screenshot belongs to (required) |
 | `--screenshotName` | string | Screenshot name (required)                       |
 
-## agent dom-diff
+## agent dom / dom-diff
 
 ```bash
 # CLI
-meticulous agent dom-diff --replayDiffId=<id> --screenshotName=<name> [--context=<N|full>]
+meticulous agent dom --replayId=<id> --screenshotName=<name> [--path=<0,2,1>] [--removeNoise]
+meticulous agent dom-diff --replayDiffId=<id> --screenshotName=<name> [--context=<N|full>] [--path=<0,2,1>]
 
 # MCP
+get_dom(replayId="<id>", screenshotName="<name>")
 get_dom_diff(replayDiffId="<id>", screenshotName="<name>")
 ```
 
-**Purpose:** Unified-diff-style DOM diff for a screenshot diff, one hunk per change.
+**Purpose:** `dom` prints one replay screenshot's DOM as it was captured (or, with `--removeNoise`, as `dom-diff` compares it), pretty-printed; take the replay ID from `test-run-diffs --includeReplayIds`. `dom-diff` prints a screenshot diff's DOM diff with noise removed from both sides, as indented unified-diff hunks, each headed by `diff <n> at path [...]`, naming the path of the element that changed. `--path` is an nth-child path from `<body>` (`0,2,1`), as a hunk header, or a timeline event's `user.elementAtCoordinatesPath` / `user.obscuredByPath`, names it; it narrows either command to that element. Both page by line with `--limit` (default 100) / `--offset`; counts and paging notes go to stderr. Run `meticulous schema agent <command>` for the full options.
 
-| Option             | Type             | Default | Description                                                                       |
-| ------------------ | ---------------- | ------- | --------------------------------------------------------------------------------- |
-| `--replayDiffId`   | string           | —       | Replay diff (required)                                                            |
-| `--screenshotName` | string           | —       | Screenshot name (required)                                                        |
-| `--context`        | number \| `full` | `3`     | Context lines around each hunk (`0` for none, `full` for a single full-file diff) |
-
-## agent timeline-diff
+## agent timeline-diff / timeline-event-diff / timeline / timeline-event
 
 ```bash
 # CLI
-meticulous agent timeline-diff --replayDiffId=<id>
+meticulous agent timeline-diff --replayDiffId=<id> [--includeIdenticalEvents] [--kinds=<kinds|all>] [--screenshotName=<name>] [--sinceMs=<ms>] [--untilMs=<ms>]
+meticulous agent timeline-event-diff --replayDiffId=<id> --eventId=<eventId> [--includeIdenticalFields]
+meticulous agent timeline --replayId=<id>
+meticulous agent timeline-event --replayId=<id> --eventId=<eventId>
 
-# MCP (its `diff` field carries the raw status enum rather than the TSV symbol below)
+# MCP
 get_timeline_diff(replayDiffId="<id>")
+get_timeline_event_diff(replayDiffId="<id>", eventId="<eventId>")
+get_timeline(replayId="<id>")
+get_timeline_event(replayId="<id>", eventId="<eventId>")
 ```
 
-**Purpose:** Timeline event diffs for a replay diff. Outputs a TSV table (`diff`, `timeMs`, `event`, `description`). Useful for diagnosing why a screenshot diff occurred (failed requests, redirects, timing).
-
-| Option           | Type   | Description            |
-| ---------------- | ------ | ---------------------- |
-| `--replayDiffId` | string | Replay diff (required) |
+**Purpose:** Diagnose why a screenshot diff occurred (failed requests, redirects, mismatched user events, timing). `timeline-diff` lists a replay diff's timeline events, by default only those that differ plus the screenshots and user events around them, as a TSV table (`diff`, `eventId`, `timeMs`, `kind`, `description`, `count`, `changes`). Pass a row's `eventId` to `timeline-event-diff` for that event's fields that differ between base and head. `timeline` and `timeline-event` do the same for a single replay (e.g. a `baseReplayId`/`headReplayId` from `test-run-diffs --includeReplayIds`): the event list, and one event's full details. User-event (`user:<n>`) and screenshot event IDs are the same in both views, but other events are numbered per view (`base:<n>`/`head:<n>` in a diff, `idx:<n>` in a single replay), so take an ID from the view you pass it to. `timeline` and `timeline-diff` take the same filters (`--kinds`, `--screenshotName`, `--sinceMs`/`--untilMs`) and page with `--limit` (default 100) / `--offset`; counts and paging notes go to stderr. Run `meticulous schema agent <command>` for the full options.
 
 ## agent test-run-check
 
@@ -477,7 +479,7 @@ get_agent_swarm_run(prNumber=<n>, status="fail,blocked")
 get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)   # or testRunId / commitSha / prNumber in place of swarmRunId
 ```
 
-**Purpose:** Read Agent swarm results. `agent-swarm-runs` lists a project's runs, newest first (default: 100); `--prNumber` lists every run for a pull request across its commits, and `--includeCounts` adds each succeeded run's case counts. `agent-swarm-run` shows one run — by `--swarmRunId`, or the latest execution run for the commit of `--testRunId`, `--commitSha` or `--prNumber` (the pull request's head commit) — as a TSV table of its cases (`caseIndex`, `status`, `blockedBy`, `title`, `outcomeSummary`, `takeaway`: the run summary's headline finding for up to three cases, empty for the rest, `regressionCount`: base-vs-head comparisons judged regressions, and `usedSyntheticMockData`: the run served modified or generated mock API data, which weakens a pass), with the run's status, case `counts`, `supersededBySwarmRunId` and `notTestable` on stderr. `--json` and MCP return the same fields. `agent-swarm-run-case` takes the same run selectors plus `--caseIndex`, and shows one case in full: steps, `mockDataProvenance`, `runEvidence` (backend failures and page errors during the run), base-vs-head `comparisons`, recorded `sessionIds`, the failure checker's `check` (`verdict`, `blockedBy`, `confidence`, `headline`, `reason`, `linkedToChange`, and `error` when checking could not complete), and a ready-made `fixPrompt` for an upheld failure. A check's `linkedToChange` is `yes`, or `unclear` when the checker could not trace the failure to the pull request; failures the pull request did not cause are reported as blocked. With no target, the CLI uses the current git HEAD.
+**Purpose:** Read Agent swarm results. `agent-swarm-runs` lists a project's runs, newest first (default: 100); `--prNumber` lists every run for a pull request across its commits, and `--includeCounts` adds each succeeded run's case counts. `agent-swarm-run` shows one run — by `--swarmRunId`, or the latest execution run for the commit of `--testRunId`, `--commitSha` or `--prNumber` (the pull request's head commit) — as a TSV table of its cases (`caseIndex`, `status`, `blockedBy`, `title`, `outcomeSummary`, `takeaway`: the run summary's headline finding for up to three cases, empty for the rest, `regressionCount`: base-vs-head comparisons judged regressions, and `usedSyntheticMockData`: the run served modified or generated mock API data, which weakens a pass), with the run's status, case `counts`, `supersededBySwarmRunId` and `notTestable` on stderr. `--json` and MCP return the same fields. `agent-swarm-run-case` takes the same run selectors plus `--caseIndex`, and shows one case in full: steps, `mockDataProvenance` (recorded, modified and generated mock API responses; for a fail, `strictRecheck.reproduced` says whether it reproduced on recorded data only), `runEvidence` (backend failures and page errors during the run), base-vs-head `comparisons`, recorded `sessionIds`, the failure checker's `check` (`verdict`, `blockedBy`, `confidence`, `headline`, `reason`, `linkedToChange` and its `linkedToChangeRationale`, and `error` when checking could not complete), and a ready-made `fixPrompt` for an upheld failure. A check's `linkedToChange` is `yes`, or `unclear` when the checker could not trace the failure to the pull request; failures the pull request did not cause are reported as blocked. Older runs may also show `no`: the failure stands, but the pull request did not cause it. With no target, the CLI uses the current git HEAD.
 
 `agent-swarm-run` and `agent-swarm-run-case` wait for a run that is still in progress to finish, for at most 10 minutes (`--dontWaitForSwarmRunToComplete` returns at once, reporting the run on stderr). On MCP they return `{ status: 'processing', message }` until then: poll the same tool every 10s, for at most 10 minutes, and if it is still `processing` then, tell the user the run hasn't finished yet.
 
