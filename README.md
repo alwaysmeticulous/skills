@@ -45,7 +45,7 @@ Then run `codex mcp login meticulous` to authenticate the MCP server (login happ
 
 ### Cursor Marketplace
 
-This repository is also packaged as a [Cursor plugin](https://cursor.com/docs/plugins). Once listed in the Cursor Marketplace, Cursor users can install Meticulous skills from **Customize → Plugins** (or search the marketplace) without using `npx skills`. The `npx skills` flow above remains the recommended path when you need the same skills across multiple agents.
+This repository is also packaged as a [Cursor plugin](https://cursor.com/docs/plugins). Once listed in the Cursor Marketplace, Cursor users can install Meticulous skills from **Customize → Plugins** (or search the marketplace) without using `npx skills`. The plugin also automatically connects the hosted [Meticulous MCP server](https://app.meticulous.ai/api/mcp): authenticate it from Cursor's MCP settings (login happens in your browser). If you added the Meticulous MCP server to Cursor by hand before, remove that entry so its tools aren't listed twice. The `npx skills` flow above remains the recommended path when you need the same skills across multiple agents.
 
 ## Skills
 
