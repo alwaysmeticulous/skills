@@ -67,19 +67,21 @@ get_dom_diff(replayDiffId="<replayDiffId>", screenshotName="<screenshotName>")
 
 Optional: `--context <N|full>` (CLI) controls how many context lines surround each hunk (default 3).
 
-Output is a unified diff (`+`/`-`, indentation stripped), one `[diff N]`-headed block per independent change — for example (illustrative, not real output):
+Output is a unified diff (`+`/`-`) of both sides with noise (generated ids, Meticulous's own annotations) removed, one block per change, headed by `diff N at path [...]` naming the element that changed — for example (illustrative, not real output):
 
 ```
-[diff 0]
+diff 0 at path [1,0,2]
  <div class="item">
 -  <span class="label">old label</span>
 +  <span class="label" data-flag="true">new label</span>
  </div>
-[diff 1]
+diff 1 at head path [1,3]
  <ul class="list">
 +  <li>new item</li>
  </ul>
 ```
+
+It's paged by line (`--limit`/`--offset`, 100 lines by default); pass a hunk's path as `--path` to diff only that element. To read the DOM itself, as one replay captured it, use `agent dom --replayId <replayId> --screenshotName <screenshotName> [--path <path>]` (MCP: `get_dom`), with the replay IDs from `test-run-diffs --includeReplayIds`.
 
 ## Step 4 -- Get the replay timeline (optional, for diagnosing unexpected diffs)
 
