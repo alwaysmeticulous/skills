@@ -15,5 +15,9 @@
   "tags": ["visual-regression", "testing", "frontend", "mcp"],
   "logo": "assets/logo.png",
   "skills": "./skills/",
-  "mcpServers": "./mcp.json"
+  "mcpServers": {
+    "meticulous": {
+      "url": "https://app.meticulous.ai/api/mcp"
+    }
+  }
 }
