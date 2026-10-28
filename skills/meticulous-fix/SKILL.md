@@ -58,7 +58,7 @@ meticulous agent agent-swarm-run-case --swarmRunId=<id> --caseIndex=<n> --json
 get_agent_swarm_run_case(swarmRunId="<id>", caseIndex=<n>)
 ```
 
-If the case's `check.linkedToChange` is `"no"`, the checker found that this PR didn't cause the failure, e.g. a pre-existing bug: report it rather than fixing it, unless the user asks you to.
+A failure this PR didn't cause, e.g. a pre-existing bug, is reported as `blocked` rather than `fail`, so it isn't in this list. An older run may still list one as `fail` with `check.linkedToChange` `"no"`: report it rather than fixing it, unless the user asks you to.
 
 ## Step 2 -- Read the review comments for diffs that have any
 
