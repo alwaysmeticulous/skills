@@ -139,11 +139,11 @@ A comment decides nothing — the diff stays `unreviewed` and the check stays pe
 
 **Non-visual checks (only if the PR's run has any).** Find out with `meticulous agent test-run-check --availableIds`. If it is refused because the project isn't set up for checks, or lists nothing, skip this. Otherwise handle each failing check as in the `meticulous-review` skill's Step 8, but classify it with Step 4's rule: for a no-diff task, a failing check is a **regression** until proven otherwise.
 
-- **Regression**: fix it and go back to Step 3. If you can't fix it, `reject-check` it with a reason.
+- **Regression**: fix it and go back to Step 3. If you can't fix it, leave it undismissed and flag it to the user: an undismissed failing check already counts as a regression.
 - **Unrelated to your change**: `ignore-check` it with a reason.
-- **Acceptable**: `approve-check` it with a reason.
+- **Acceptable**: leave it for a person to dismiss; agents can't approve checks.
 
-`approve-check` and `ignore-check` need the project's **Enable approve/ignore check actions** setting. Where they're refused, leave the check undecided. A check's reason is stored but never shown to people in the Meticulous app, so also list every failing check, with your verdict and reasoning, in the PR description.
+`ignore-check` needs the project's **Let agents ignore checks** setting. Where it's refused, leave the check undismissed. A check's reason is stored but never shown to people in the Meticulous app, so also list every failing check, with your verdict and reasoning, in the PR description.
 
 **Agent swarm (only if the PR's commit has a run).** Some projects also run Agent swarm, Meticulous's hosted agent that tests a pull request's build in a browser and reports a handful of test cases. Look through its run as in the `meticulous-review` skill's Step 9: its results are informational, except for a `fail` case with a fix prompt. For a no-diff task, treat such a case like a regression: fix it as in the `meticulous-fix` skill's Step 4 (checking the prompt's cited code against your branch first) and go back to Step 3, unless an older run's check found the failure unrelated to your change (`check.linkedToChange` is `"no"`; newer runs report such failures as `blocked`). Add a line to the PR description summarizing the run's outcomes (e.g. "4 cases: 3 passed, 1 blocked"), and any fix prompt you didn't act on, and why.
 

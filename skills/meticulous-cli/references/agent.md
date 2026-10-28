@@ -43,12 +43,8 @@ The commands that read a test run (`test-run-for-commit`, `test-run-diffs`, `tes
 | `timeline-event`                 | The full details of one event in a replay's timeline                        | `get_timeline_event`                                                                                                             |
 | `test-run-check`                 | Get the Markdown report for a non-visual check                              | `get_test_run_check`                                                                                                             |
 | `test-run-check --availableIds`  | List the check IDs available for a test run                                 | `get_test_run_check_available_ids`                                                                                               |
-| `check-comments`                 | Review comments for a non-visual check                                      | `get_check_comments`                                                                                                             |
-| `reject-check`                   | Reject a failing check (real, blocking decision) and comment why            | `reject_check`                                                                                                                   |
-| `approve-check`                  | Approve a failing check, optionally commenting why (opt-in per project)     | `approve_check`                                                                                                                  |
+| `check-comments`                 | Reasons agents gave for ignoring a non-visual check                         | `get_check_comments`                                                                                                             |
 | `ignore-check`                   | Say a failing check is unrelated, e.g. a flake (opt-in per project)         | `ignore_check`                                                                                                                   |
-| `create-check-comment`           | Start a review comment thread on a check                                    | `create_check_comment`                                                                                                           |
-| `reply-to-check-comment`         | Reply to a check review comment thread                                      | `reply_to_check_comment`                                                                                                         |
 | `js-coverage --testRunId`        | Per-file JS coverage for a test run                                         | `get_test_run_js_coverage`                                                                                                       |
 | `js-coverage --latestForProject` | Per-file JS coverage for a project's latest successful run                  | `get_project_js_coverage`                                                                                                        |
 | `js-coverage --replayId`         | Per-file JS coverage for a replay                                           | `get_replay_js_coverage`                                                                                                         |
@@ -304,42 +300,33 @@ A report result is `{ status: 'processing' }` while results have not been report
 
 On MCP, `get_test_run_check` does not poll internally — poll it yourself every 10s until `status` is `complete` or `failed` (final — no retry).
 
-## agent reject-check / agent approve-check / agent ignore-check
+## agent ignore-check
 
 ```bash
 # CLI
-meticulous agent reject-check (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] --reason="<why>"
-meticulous agent approve-check (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] [--reason="<why>"]
 meticulous agent ignore-check (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] --reason="<why>"
 
 # MCP
-reject_check(testRunId="<id>", checkId="<id>", checkType="builtin", reason="<why>")
-approve_check(testRunId="<id>", checkId="<id>")
 ignore_check(testRunId="<id>", checkId="<id>", reason="<why>")
 ```
 
-**Purpose:** Record an agent's verdict on one failing non-visual check — the check counterpart of `reject-diff` / `approve-diff` / `ignore-diff`. Only a check that reported `warn-and-require-user-ack` can be reviewed. The reason is stored as a check review comment prefixed with the verdict (e.g. `Verdict: reject`), and the command returns that comment's `id` (`approve-check` without `--reason` writes no comment and returns nothing). On MCP, `prNumber` (plus an optional `project`) can stand in for `testRunId`.
+**Purpose:** Record an agent decision ignoring one failing non-visual check as unrelated to the change under review — the check counterpart of `ignore-diff`. It is the same decision as **Dismiss** in the Meticulous app. A failing check nobody dismisses counts as a regression Meticulous caught and keeps the pull request's checks status failing, so ignoring is the only decision there is, and agents can't approve or reject checks: report a real regression to the user instead. Only a check that reported `warn-and-require-user-ack` can be ignored. The reason is stored as a check comment prefixed with the verdict (`Verdict: ignore`), readable with `check-comments` but not shown in the Meticulous app. On MCP, `prNumber` (plus an optional `project`) can stand in for `testRunId`.
 
-- **`reject-check`** writes a real `rejected` review, blocking the pull request's checks status exactly like a human rejection.
-- **`approve-check`** and **`ignore-check`** need **Enable approve/ignore check actions** (project settings → Agents; shown only for projects with checks). Without it both are refused — unlike `ignore-diff`, there is no comment-only fallback. Neither ever clears a check a person rejected (409).
+Needs **Let agents ignore checks** (project settings → Agent access; shown only for projects with checks). Without it the call is refused — unlike `ignore-diff`, there is no comment-only fallback.
 
-Reviews are scoped to the one test run — a re-run starts unreviewed. Repeating the current verdict adds only the new comment; a changed verdict resolves the replaced verdict's comment thread.
+Reviews are scoped to the one test run — a re-run starts unreviewed. Repeating the ignore stores only the new reason.
 
-## agent check-comments / agent create-check-comment / agent reply-to-check-comment
+## agent check-comments
 
 ```bash
 # CLI
 meticulous agent check-comments (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] [--includeResolved]
-meticulous agent create-check-comment (--testRunId=<id> | --prNumber=<n>) --checkId=<id> [--checkType=builtin|custom] --text="..."
-meticulous agent reply-to-check-comment --commentId=<id> --text="..."
 
 # MCP
 get_check_comments(testRunId="<id>", checkId="<id>")
-create_check_comment(testRunId="<id>", checkId="<id>", text="...")
-reply_to_check_comment(commentId="<id>", text="...")
 ```
 
-**Purpose:** Read, start and answer review comment threads on a non-visual check. Unlike diff comments they carry no coordinates. `check-comments` prints a TSV table with columns `id`, `replyToCommentId`, `author`, `isAgentAuthored`, `text` (MCP: a list of root comments with `replies`).
+**Purpose:** Read the reasons agents gave with `ignore-check` on a non-visual check, oldest first. Agents can't otherwise comment on a check. `check-comments` prints a TSV table with columns `id`, `author`, `isAgentAuthored`, `text` (MCP: a list of objects with those attributes); `--includeResolved` adds an `isResolved` column and includes resolved comments.
 
 ## agent js-coverage
 

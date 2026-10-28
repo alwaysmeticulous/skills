@@ -1,6 +1,6 @@
 ---
 name: meticulous-fix
-description: Fix the visual diffs (and any non-visual checks) that have been reviewed and rejected on a Meticulous test run, following their review comments if given, plus any Agent swarm fix prompts on the same commit. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes, or when the `meticulous-review` skill hands off what needs fixing on a change you're working on.
+description: Fix the visual diffs that have been reviewed and rejected on a Meticulous test run (and any failing non-visual checks), following their review comments if given, plus any Agent swarm fix prompts on the same commit. Use when a user has reviewed the results of a test run and is handing off to an agent to implement the fixes, or when the `meticulous-review` skill hands off what needs fixing on a change you're working on.
 user-invocable: true
 ---
 
@@ -26,17 +26,21 @@ Without arguments the CLI resolves the run from your local git HEAD; to name it 
 
 **Not every commented row is a fix target.** The `meticulous-review` skill's `ignore-diff` posts a note saying the diff is unrelated to the change, and `approve-diff` may post one explaining an approval — neither comment is a fix instruction. When reading Step 1's rows, skip diffs whose only open comments are those; leave those threads alone.
 
-**Rejected checks (only if the run has any).** A run can also carry non-visual checks, such as `accessibility` or `network-requests`. List them with `meticulous agent test-run-check --availableIds` (MCP: `get_test_run_check_available_ids`). If that is refused because the project isn't set up for checks, or lists nothing, there are none: skip the rest of this paragraph. Otherwise read each check's recorded reasons:
+**Failing checks (only if the run has any).** A run can also carry non-visual checks, such as `accessibility` or `network-requests`. List them with `meticulous agent test-run-check --availableIds` (MCP: `get_test_run_check_available_ids`). If that is refused because the project isn't set up for checks, or lists nothing, there are none: skip the rest of this paragraph. Otherwise fetch each check's report:
 
 ```bash
 # CLI (--prNumber=<n> can stand in for --testRunId)
-meticulous agent check-comments --testRunId=<id> --checkId=<checkId> [--checkType=custom]
+meticulous agent test-run-check --testRunId=<id> --checkId=<checkId> [--checkType=custom]
 
 # MCP
-get_check_comments(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom")
+get_test_run_check(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom")
 ```
 
-A check whose open comment starts `Verdict: reject` was rejected by an agent, and the rest of the comment says why: that check is a fix target, and the reason is your instruction. Comments starting `Verdict: approve` or `Verdict: ignore` are not. A person's rejection records no reason here, so if the user tells you a check was rejected, treat it as a fix target too and work from its report. For each fix-target check, fetch its report with `meticulous agent test-run-check --checkId=<checkId> [--checkType=custom]` (MCP: `get_test_run_check`) to see the findings themselves.
+Checks can't be rejected: a failing check (one whose findings require acknowledgement) counts as a regression until someone dismisses it, so each one is a fix target, and its findings are your instruction. Passing or warn-only checks need nothing. Skip a failing check if:
+
+- an agent ignored it as unrelated to the change: `meticulous agent check-comments --testRunId=<id> --checkId=<checkId> [--checkType=custom]` (MCP: `get_check_comments`) shows an open comment starting `Verdict: ignore`, with the agent's reason;
+- the user tells you it was dismissed or to leave it (a person's dismissal isn't visible through these commands);
+- its finding is plainly an intended result of the change, such as a request the PR deliberately adds: report it as left for a person to dismiss.
 
 **Agent swarm fix prompts (only if the commit has a run).** Some projects also run Agent swarm, Meticulous's hosted agent that tests a pull request's build in a browser and reports a handful of test cases. Its results are informational, except for a `fail` case with a **fix prompt**: a failure the checker upheld, with a ready-made prompt for fixing it. Those cases are fix targets to consider. Look for a run on the commit, and list its failed cases:
 
@@ -117,7 +121,7 @@ Use `reply-to-diff-comment` when the diff already has a comment thread — pass 
 
 Either way, move on to the next fix-target diff; report it at the end (see the final report below).
 
-Fix-target checks from Step 1 are fixed the same way, working from the rejection reason and the report's findings. They have no comment thread to reply on: check reasons aren't shown to people in the Meticulous app. So record what you did for each check, fixed or not and why, in the final report and the PR comment (Step 6) instead.
+Fix-target checks from Step 1 are fixed the same way, working from the report's findings. They have no comment thread to reply on: check reasons aren't shown to people in the Meticulous app. So record what you did for each check, fixed or not and why, in the final report and the PR comment (Step 6) instead.
 
 For an Agent swarm case with a fix prompt, start from the `fixPrompt` (a field of the case's output; the CLI's `agent-swarm-run-case --fixPrompt` prints only that). It is a starting point, not a verified patch: the checker read the commit the run tested, so **check every file and line it cites against your branch first**, and fix the root cause rather than the symptom the agent hit. Like checks, cases have no comment thread, so record what you did for each in the final report and the PR comment.
 
@@ -160,7 +164,7 @@ If the project runs Agent swarm on each commit, its run on the pushed commit (`m
 
 Summarize the outcome, covering **every fix-target** diff, check and Agent swarm fix prompt from Step 1 (omit the ignore-only rows you skipped). Link every diff you mention: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`, and the Agent swarm results, if any: `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`.
 
-1. **Fixed**: which diffs, checks and cases were resolved, what the underlying code change was, and which comment(s), rejection reason or fix prompt it addressed, if any.
+1. **Fixed**: which diffs, checks and cases were resolved, what the underlying code change was, and which comment(s), check finding or fix prompt it addressed, if any.
 2. **Not fixed** (if any): which diffs, checks or cases couldn't be addressed, and why — e.g. the comment's ask wasn't possible, was ambiguous, or conflicted with something else. For a diff, note that you left this explanation as a reply/comment on it (Step 4) — don't just leave it in the report where only this conversation sees it. For a check or Agent swarm case, the report and PR comment are the only record a person sees. Be specific enough that a human reviewer can pick this back up without re-deriving what you already found.
 
 Post this report as a comment on the PR itself, in addition to delivering it here (e.g. `gh pr comment <number> --body "..."` for GitHub, `glab mr note <id> --message "..."` for GitLab, or for Bitbucket `twg bitbucket pull-requests comment create --pull-request <id> --text "..."` if the [Teamwork Graph CLI](https://developer.atlassian.com/cloud/twg-cli/) is available — follow its `twg-engineering-work` skill if that's installed, and run `twg setup bitbucket` once if it asks for a Bitbucket token — else a `POST /2.0/repositories/{workspace}/{repo_slug}/pullrequests/{id}/comments` call with body `{"content": {"raw": "..."}}`).

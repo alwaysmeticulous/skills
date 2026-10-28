@@ -206,31 +206,27 @@ meticulous agent test-run-check --checkId=<checkId> [--checkType=custom]
 get_test_run_check(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom")
 ```
 
-Only a **failing** check needs a decision: one whose findings require acknowledgement. A passing check, or one that only warns, needs nothing. The report describes the findings. For builtin checks, `meticulous agent test-runs --prNumber=<n> --includeCheckIssueCounts` also counts the failures (`checkFailureCount`) per run. The review commands below refuse a check that doesn't require acknowledgement, so a refusal also settles it.
+Only a **failing** check needs attention: one whose findings require acknowledgement. A passing check, or one that only warns, needs nothing. The report describes the findings. For builtin checks, `meticulous agent test-runs --prNumber=<n> --includeCheckIssueCounts` also counts the failures (`checkFailureCount`) per run. `ignore-check` refuses a check that doesn't require acknowledgement, so a refusal also settles it.
 
-Classify each failing check the way Step 5 classifies a diff, against Step 0's expectations, and act on it:
+Checks work differently from diffs: the only decision is to **dismiss** one, and a failing check nobody dismisses counts as a regression Meticulous caught and keeps the checks status failing. Classify each failing check the way Step 5 classifies a diff, against Step 0's expectations, and act on it:
 
-- **Expected**: an intended consequence of the change, such as a request the PR deliberately adds. **Approve** it.
-- **Potential regression** → **reject**.
-- **Unrelated to the change under review** → **ignore**, under the same rule as diffs: only a finding the change has no plausible way to cause, such as one in code or pages the PR doesn't touch. Never ignore a finding you cannot explain.
+- **Expected**: an intended consequence of the change, such as a request the PR deliberately adds. Leave it for a person to dismiss, and say so in your final report.
+- **Potential regression**: leave it undismissed. That already records it as a regression, so there's nothing to call. Flag it in your final report with what the check found and your best assessment of the cause.
+- **Unrelated to the change under review** → **ignore**, under the same rule as diffs: only a finding the change has no plausible way to cause, such as one in code or pages the PR doesn't touch. Never ignore a finding you cannot explain, and never one that is expected or a regression: ignoring is the same as a person's Dismiss, and takes the finding out of the regressions Meticulous reports.
 
 ```bash
 # CLI (--prNumber=<n> can stand in for --testRunId)
-meticulous agent reject-check --testRunId=<id> --checkId=<checkId> [--checkType=custom] --reason="<why>"
-meticulous agent approve-check --testRunId=<id> --checkId=<checkId> [--checkType=custom] --reason="<why>"
 meticulous agent ignore-check --testRunId=<id> --checkId=<checkId> [--checkType=custom] --reason="<why>"
 
 # MCP
-reject_check(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom", reason="<why>")
-approve_check(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom", reason="<why>")
 ignore_check(testRunId="<id>", checkId="<checkId>", checkType="builtin|custom", reason="<why>")
 ```
 
-This works like Step 6, with these differences:
+This works like `ignore-diff` in Step 6, with these differences:
 
-- **People don't see the reason.** It is stored with the decision as its justification, and agents can read it back with `check-comments`, but the Meticulous app doesn't show it. Still always give one, even to `approve-check`, where it's optional, and repeat it in your final report, which is where a person will read it.
-- **`approve-check` and `ignore-check` need Enable approve/ignore check actions**, a separate project setting from the diff one. Without it both are refused: unlike `ignore-diff`, there is no comment-only fallback. Over MCP they're only offered when it's on. If they're refused, leave the check undecided and name it in your final report as needing a human decision. `reject-check` always works.
-- There's no neutral comment for a check. When unsure, leave it undecided and explain why in your final report.
+- **People don't see the reason.** It is stored with the decision as its justification, and agents can read it back with `check-comments`, but the Meticulous app doesn't show it. Repeat it in your final report, which is where a person will read it.
+- **`ignore-check` needs the "Let agents ignore checks" project setting**, separate from the diff one. Without it, it is refused: unlike `ignore-diff`, there is no comment-only fallback. Over MCP it's only offered when it's on. If it's refused, leave the check undismissed and name it in your final report as needing a human decision.
+- There's no comment on a check without ignoring it. When unsure, leave it undismissed and explain why in your final report.
 
 ## Step 9 -- Summarize Agent swarm results (only if the commit has any)
 
@@ -264,11 +260,11 @@ Cover **all significant visual changes**, plus any failing checks from Step 8 an
 
 1. **Expected changes** — brief, a line or two each: what changed, which Step 0 expectation it matches, and whether you approved it.
 2. **Flagged diffs** (if any) — the main point of the review, so give these the most detail: `replayDiffId`/`screenshotName` (linked: `https://app.meticulous.ai/test-runs/<testRunId>/replay-diff/<replayDiffId>?screenshot=<screenshotName>`), whether you rejected or ignored it, the reason you gave when flagging it (Step 6), what the change looks like, and your best assessment of the cause.
-3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you approved, rejected or ignored it (or left it undecided), and your reason in full, since the app doesn't show it.
+3. **Failing checks** (if any) — for each one, the check ID and type, what it found, whether you ignored it, flagged it as a potential regression, or left it for a person as expected or unsure, and your reasoning in full, since the app doesn't show it.
 4. **Agent swarm** (if the commit has a run) — a line or two, linked to `https://app.meticulous.ai/test-runs/<testRunId>?tab=agent-swarm`: the outcomes (e.g. "4 cases: 3 passed, 1 blocked") and roughly what they covered, or why the run didn't complete or wasn't testable. Name each failed case and its `outcomeSummary`, and point out the ones with a fix prompt, which the `meticulous-fix` skill can work from.
 5. **Already reviewed** (if Step 7 found any) — diffs someone else had rejected or commented on, with what each comment asks for, and whether you'll fix them next (Step 12) or are leaving them for the PR's author.
 
-The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undecided.
+The PR is only good when every diff and failing check has been matched or flagged. If any is flagged, the PR is not yet good: surface it clearly to the user in addition to the flag itself. Where `approve-diff` is available, also name any diff you left undecided: it keeps the check pending. Likewise name any failing check you left undismissed: it keeps the checks status failing until a person dismisses it or the code is fixed.
 
 ## Step 11 -- Report feedback to Meticulous
 
@@ -284,7 +280,7 @@ submit_feedback(message="<one or two sentences>", outcome="<helped|neutral|hinde
 
 ## Step 12 -- Hand off what needs fixing
 
-Collect the fix targets: the diffs from Step 7 (including the ones you rejected), the checks you rejected (Step 8), and Agent swarm cases with a fix prompt (Step 9). If there are none, you're done.
+Collect the fix targets: the diffs from Step 7 (including the ones you rejected), the checks you flagged as potential regressions (Step 8), and Agent swarm cases with a fix prompt (Step 9). If there are none, you're done.
 
 - **If you're working on this PR's code** — you implemented the change, or the user asked you to get the PR passing — follow the `meticulous-fix` skill for them now. It reads the comments, fixes the code, replies on each thread, pushes and confirms on the next run.
 - **If you're only reviewing** someone else's PR, don't change their code: the final report (Step 10) already names the fix targets for the PR's author, so you're done.
