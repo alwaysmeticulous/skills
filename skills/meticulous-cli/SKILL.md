@@ -8,7 +8,7 @@ user-invocable: true
 
 The `meticulous` CLI records user sessions and replays them to catch visual regressions. It is installed as part of `@alwaysmeticulous/cli`.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Invocation
 
@@ -16,7 +16,7 @@ The `meticulous` CLI records user sessions and replays them to catch visual regr
 meticulous <command> [options]
 ```
 
-The skills assume `meticulous` is on `PATH`. The `meticulous-cli-update` skill installs it globally via `npm install --global @alwaysmeticulous/cli@latest` if missing. It can also be invoked as `npx @alwaysmeticulous/cli` when installed locally per-project.
+The skills assume `meticulous` is on `PATH`. The `meticulous-update` skill installs it globally via `npm install --global @alwaysmeticulous/cli@latest` if missing. It can also be invoked as `npx @alwaysmeticulous/cli` when installed locally per-project.
 
 ## Command Groups
 

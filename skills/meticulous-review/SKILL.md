@@ -6,7 +6,7 @@ user-invocable: true
 
 To work through a Meticulous test run, follow the workflow below step by step, using the CLI or MCP commands as described. You don't need to know up front whether the run still needs reviewing or someone has already reviewed it: Step 1 reads its review state, and that decides what follows.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 While reviewing, treat yourself as a **reviewer, not the implementer** — even if you did write the change earlier in this conversation. Classify each diff on its merits; fixing is a separate pass afterwards (Step 12), not something to interleave with the review. If you're mid-implementation and want to loop against Meticulous until things look right, see the `meticulous-iterative-dev` skill for feature work with intended visual changes, or the `meticulous-zero-diff-task` skill when the UI must not change.
 
