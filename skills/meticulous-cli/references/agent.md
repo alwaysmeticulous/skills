@@ -562,7 +562,8 @@ trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 | `--deploymentId`                 | string  | latest for HEAD     | Deployment to run against                                                                                                                                                  |
 | `--commitSha`                    | string  | current git HEAD    | Resolve the most recent deployment for this commit                                                                                                                         |
 | `--baseSha`                      | string  | inferred merge-base | Base commit to compare against                                                                                                                                             |
-| `--gitDiffOutput`                | string  | inferred            | Explicit git diff, paired with `--baseSha`                                                                                                                                 |
+| `--gitDiffOutput`                | string  | inferred            | Explicit git diff, paired with `--baseSha` (compute it as shown below the table)                                                                                           |
+| `--gitDiffFile`                  | string  | —                   | Alternative to `--gitDiffOutput`: a file holding the diff, for one too large to pass as an argument                                                                        |
 | `--sessionIds`                   | string  | project golden set  | Comma-separated session IDs to replay for both base and head                                                                                                               |
 | `--maxDurationSeconds`           | number  | —                   | Cap the run's duration                                                                                                                                                     |
 | `--runBuiltinChecks`             | boolean | `false`             | Also run the project's enabled builtin checks on the run; read them with `test-run-check`. Rejected when none are enabled. Has no effect without a base to compare against |
@@ -570,6 +571,12 @@ trigger_test_run(deploymentId="<id>", baseSha="<sha>")
 | `--dryRun`                       | boolean | `false`             | Print what would be triggered without doing it                                                                                                                             |
 
 `deploymentId` on MCP comes from `register_asset_build`/`register_container_build`. `baseSha`/`gitDiffOutput` are never inferred on MCP — compute them locally (e.g. `git merge-base origin/main HEAD`) and pass them explicitly.
+
+When you pass a diff yourself (`--gitDiffOutput`, `--gitDiffFile`, or MCP `gitDiffOutput`), compute it the way the CLI does when it infers one, so your git config (`diff.noprefix`, `diff.relative`, `diff.submodule`, colour, external diff or textconv drivers) can't change its format:
+
+```bash
+git -c core.quotePath=false -c diff.renameLimit=0 -c diff.relative=false diff --no-color --no-ext-diff --no-textconv --submodule=short --src-prefix=a/ --dst-prefix=b/ -M <baseSha> <head>
+```
 
 ## agent complete-base-run
 

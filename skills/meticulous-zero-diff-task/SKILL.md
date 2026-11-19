@@ -37,7 +37,7 @@ register_asset_build(uploadId="<id>", commitSha="<sha>")      # or register_cont
 trigger_test_run(deploymentId="<deploymentId>", baseSha="<sha>")
 ```
 
-`trigger_test_run` on MCP never infers `baseSha`/`gitDiffOutput` (compute the base locally) and always returns immediately without waiting for the run to finish (unlike the CLI, which blocks by default).
+`trigger_test_run` on MCP never infers `baseSha`/`gitDiffOutput` (compute the base locally, and a diff, if you pass one, in the format the `meticulous-cli` reference gives) and always returns immediately without waiting for the run to finish (unlike the CLI, which blocks by default).
 
 Run `trigger-test-run` from the repo directory to infer both the base (merge-base with the origin default branch) and the git diff automatically. See the `meticulous-cli` reference for the full option list — in particular, the working tree can be dirty (captured as an ephemeral commit) so you don't need to commit before each iteration below.
 
