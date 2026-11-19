@@ -48,7 +48,7 @@ meticulous schema
 # Show the full option schema for a specific command
 meticulous schema simulate
 meticulous schema download replay
-meticulous schema ci run-with-tunnel
+meticulous schema ci upload-assets
 
 # Show subcommands for a command group
 meticulous schema ci
