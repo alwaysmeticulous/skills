@@ -6,7 +6,7 @@ user-invocable: true
 
 To grind out a no-diff (or low-diff) implementation task, follow the workflow below step by step, using the CLI or MCP commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 This skill is for tasks whose success criterion is visual stability, not visual change: dependency/version upgrades, refactors, migrations (e.g. framework/library swaps, build-tool changes), and similar work where any Meticulous diff is a sign something broke, not a feature to explain away. It also works for low-diff tasks (a handful of expected, well-understood visual changes alongside mostly-unchanged output) — the loop is the same, just with a smaller set of diffs you expect to end up justifying rather than fixing.
 

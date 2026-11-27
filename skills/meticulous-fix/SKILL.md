@@ -6,7 +6,7 @@ user-invocable: true
 
 To fix diffs that have already been reviewed and rejected, follow the workflow below step by step, using the CLI or MCP commands as described.
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 This skill assumes the review has already happened — a user (or the `meticulous-review` skill) has gone through the run and rejected the diffs that are real problems, possibly leaving comments explaining what's wrong or what to do about it, though comments aren't a given. Your job here is narrower than a full review: don't re-litigate diffs that weren't rejected, and don't second-guess the rejection itself — just work out what needs to change and make it happen.
 

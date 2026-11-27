@@ -8,7 +8,7 @@ user-invocable: true
 
 This skill covers running a single simulation and interpreting the results. For the `simulate` command's full option reference see the `meticulous-cli` skill's [`simulate` reference](../meticulous-cli/references/simulate.md).
 
-> Before starting, run the `meticulous-cli-update` skill to ensure the Meticulous CLI and skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
+> Before starting, run the `meticulous-update` skill to check the Meticulous setup (MCP or CLI) and make sure it and the skills are up to date — unless it has already run earlier in this conversation, in which case skip it.
 
 ## Prerequisites
 
